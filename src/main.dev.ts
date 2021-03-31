@@ -69,9 +69,9 @@ const createWindow = async () => {
 
   mainWindow = new BrowserWindow({
     show: false,
-    width: 1024,
-    height: 728,
-    // frame: false,
+    width: 335,
+    height: 440,
+    frame: false,
     icon: getAssetPath('icon.png'),
     webPreferences: {
       nodeIntegration: true,
@@ -79,7 +79,8 @@ const createWindow = async () => {
     },
   });
 
-  mainWindow.loadURL(`file://${__dirname}/index.html`);
+  // mainWindow.loadURL(`file://${__dirname}/index.html`);
+  mainWindow.loadURL(`file://${__dirname}/index.html#/signup`);
 
   // @TODO: Use 'ready-to-show' event
   //        https://github.com/electron/electron/blob/master/docs/api/browser-window.md#using-ready-to-show-event

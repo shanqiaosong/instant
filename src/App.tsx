@@ -1,8 +1,11 @@
-import React, { Component } from 'react';
-import { BrowserRouter as Router, Switch, Route, Link } from 'react-router-dom';
+import React from 'react';
+import { HashRouter as Router, Switch, Route, Link } from 'react-router-dom';
 
-import './App.global.css';
+import './App.global.sass';
 import { remote } from 'electron';
+import CssBaseline from '@material-ui/core/CssBaseline';
+import Signup from './pages/Signup';
+import 'fontsource-roboto';
 // import icon from '../assets/icon.svg';
 
 const Hello = () => {
@@ -32,26 +35,16 @@ const Hello = () => {
   );
 };
 
-class Test extends Component {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  constructor(props) {
-    super(props);
-    this.state = {};
-  }
-
-  render() {
-    return <div>test</div>;
-  }
-}
-
 export default function App() {
   return (
-    <Router>
-      <Switch>
-        <Route path="/test" component={Test} />
-        <Route path="/" component={Hello} />
-      </Switch>
-    </Router>
+    <>
+      <CssBaseline />
+      <Router>
+        <Switch>
+          <Route path="/signup" component={Signup} />
+          <Route path="/" exact component={Hello} />
+        </Switch>
+      </Router>
+    </>
   );
 }
