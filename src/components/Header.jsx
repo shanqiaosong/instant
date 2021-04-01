@@ -5,9 +5,20 @@ import PropTypes from 'prop-types';
 import style from './Header.sass';
 
 export default function Header(props) {
-  const { title } = props;
+  const { title, background } = props;
+  const bgColors = {
+    grey: '#fafafa',
+    blue: '#cbdef5',
+    dark: '#343434',
+  };
+  const backgroundColor = bgColors[background];
   return (
-    <div className={style.Header}>
+    <div
+      style={{
+        backgroundColor,
+      }}
+      className={style.Header}
+    >
       <div className={style.title}>{title}</div>
       <Grid className={style.btns} container direction="row" justify="flex-end">
         <Button size="small">
@@ -23,4 +34,5 @@ export default function Header(props) {
 
 Header.propTypes = {
   title: PropTypes.string.isRequired,
+  background: PropTypes.string.isRequired,
 };

@@ -13,6 +13,8 @@
     margin: 10px auto
     -webkit-app-region: no-drag
     z-index: 1
+    &>*
+      margin-bottom: 5px
   .avatarWrap
     margin: 40px auto 10px
     width: fit-content
@@ -41,14 +43,16 @@
     margin: auto
     text-align: center
     .crop
-      background: #e8e8e8
       height: calc(100% - 58px)
       display: flex
       align-items: center
       justify-content: center
       position: relative
     .btns
-      padding: 12px
+      padding: 7px 12px 12px
       position: absolute
       bottom: 0
+      border-top: 1px solid #eaeaea
+  .submit
+    margin-top: 8px
 

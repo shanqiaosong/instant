@@ -1,5 +1,7 @@
 import React from 'react';
 import { HashRouter as Router, Switch, Route, Link } from 'react-router-dom';
+import { MuiPickersUtilsProvider } from '@material-ui/pickers';
+import MomentUtils from '@date-io/moment';
 
 import './App.global.sass';
 import { remote } from 'electron';
@@ -38,13 +40,15 @@ const Hello = () => {
 export default function App() {
   return (
     <>
-      <CssBaseline />
-      <Router>
-        <Switch>
-          <Route path="/signup" component={Signup} />
-          <Route path="/" exact component={Hello} />
-        </Switch>
-      </Router>
+      <MuiPickersUtilsProvider utils={MomentUtils}>
+        <CssBaseline />
+        <Router>
+          <Switch>
+            <Route path="/signup" component={Signup} />
+            <Route path="/" exact component={Hello} />
+          </Switch>
+        </Router>
+      </MuiPickersUtilsProvider>
     </>
   );
 }
