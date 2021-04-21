@@ -4,18 +4,19 @@ import TextField from '@material-ui/core/TextField';
 import FormControl from '@material-ui/core/FormControl';
 import InputLabel from '@material-ui/core/InputLabel';
 import Input from '@material-ui/core/Input';
+
 import InputAdornment from '@material-ui/core/InputAdornment';
 import IconButton from '@material-ui/core/IconButton';
 import Visibility from '@material-ui/icons/Visibility';
 import VisibilityOff from '@material-ui/icons/VisibilityOff';
 import Tooltip from '@material-ui/core/Tooltip';
+import PropTypes from 'prop-types';
+import { Link, withRouter } from 'react-router-dom';
 
 import Avatar from '@material-ui/core/Avatar';
 // eslint-disable-next-line import/no-unresolved
 // import 'react-image-crop/dist/ReactCrop.css?global';
 import ReactCrop from 'react-image-crop';
-
-import { remote } from 'electron';
 import { Grid } from '@material-ui/core';
 import FormHelperText from '@material-ui/core/FormHelperText';
 import RadioGroup from '@material-ui/core/RadioGroup';
@@ -23,13 +24,16 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Radio from '@material-ui/core/Radio';
 import { KeyboardDatePicker } from '@material-ui/pickers';
 import moment from 'moment';
+import { withSnackbar } from 'notistack';
 import Header from '../components/Header';
 import style from './Signup.sass';
+import utils from '../utils/network';
+import animateToSize from '../utils/animateToSize';
 
-export default class Signup extends React.Component {
+class Signup extends React.Component {
   width = 335;
 
-  height = 600;
+  height = 663;
 
   constructor(props) {
     super(props);
@@ -43,11 +47,24 @@ export default class Signup extends React.Component {
       gender: '',
       email: '',
       birthday: moment('2000-01-01'),
+      pending: false,
     };
-    remote.getCurrentWindow().setSize(this.width, this.height);
+  }
+
+  componentDidMount() {
+    // 测试用
+    this.setState({
+      nickname: 'testing',
+      gender: 1,
+      email: 'hhh@eee.com',
+      password: 'qiaosong',
+      birthday: moment('2004-01-01'),
+    });
+    animateToSize(this.width, this.height);
   }
 
   validate = (field, value) => {
+    // 返回是否通过测试
     switch (field) {
       case 'password':
         return this.setErrInfo(
@@ -77,6 +94,8 @@ export default class Signup extends React.Component {
           field,
           value && value.isValid() ? null : '请输入有效日期'
         );
+      case 'croppedImage':
+        return true; // 不强制要求上传头像
       default:
         return false;
     }
@@ -86,7 +105,8 @@ export default class Signup extends React.Component {
     this.setState((state) => ({
       errors: { ...state.errors, [field]: info },
     }));
-    return info !== null;
+    // 返回是否通过测试
+    return info === null;
   };
 
   handleMouseDownPassword = (event) => {
@@ -166,24 +186,47 @@ export default class Signup extends React.Component {
   };
 
   handleSubmit = () => {
+    const { enqueueSnackbar, history } = this.props;
     const fields = ['password', 'nickname', 'gender', 'email', 'birthday'];
     const { validate, state } = this;
-    const { errors } = state;
     const data = {};
     let checked = true;
     // eslint-disable-next-line no-restricted-syntax
     for (const field of fields) {
-      if (errors[field] === undefined) {
-        // 没有被验证过
-        if (!validate(field, state[field])) checked = false;
-      } else if (errors[field] !== null) {
-        // 验证过但是没有通过
-        checked = false;
-      }
+      if (!validate(field, state[field])) checked = false;
       data[field] = state[field];
     }
     if (!checked) return;
-    console.log(data);
+    data.birthday = data.birthday.format('yyyy-MM-DD');
+    // 为了去掉前缀
+    data.avatar = state.croppedImage?.slice(23);
+    this.setState({
+      pending: true,
+    });
+    utils
+      .post('/signup', data)
+      .then((res) => {
+        console.log(res);
+        enqueueSnackbar('注册成功', {
+          variant: 'success',
+          autoHideDuration: 1500,
+        });
+        this.setState({
+          pending: false,
+        });
+        console.log(data);
+        history.push('/login');
+        return res;
+      })
+      .catch((e) => {
+        console.error(e);
+        enqueueSnackbar('网络或服务器错误', {
+          variant: 'error',
+        });
+        this.setState({
+          pending: false,
+        });
+      });
   };
 
   render() {
@@ -198,14 +241,16 @@ export default class Signup extends React.Component {
       gender,
       email,
       birthday,
+      pending,
     } = this.state;
     return (
       <>
-        <Header
-          background={src ? 'grey' : 'blue'}
-          title={src ? '裁剪头像' : '注册'}
-        />
         <div className={[style.Signup, 'Signup'].join(' ')}>
+          <Header
+            background={src ? 'grey' : 'blue'}
+            title={src ? '裁剪头像' : '注册'}
+            loading={pending}
+          />
           <div className={style.draggable} />
           <div className={style.avatarWrap}>
             <label htmlFor="avatarFile">
@@ -364,17 +409,37 @@ export default class Signup extends React.Component {
               </RadioGroup>
               <FormHelperText>{errors.gender ?? ''}</FormHelperText>
             </FormControl>
-            <Button
-              onClick={this.handleSubmit}
-              variant="contained"
-              color="primary"
-              className={style.submit}
-            >
-              注册
-            </Button>
+            <Grid container justify="center">
+              <Button
+                onClick={this.handleSubmit}
+                variant="contained"
+                color="primary"
+                className={style.submit}
+                disabled={pending}
+              >
+                注册
+              </Button>
+              <Link to="/login">
+                <Button
+                  variant="text"
+                  color="primary"
+                  className={style.submit}
+                  disabled={pending}
+                >
+                  已有账号，直接登陆
+                </Button>
+              </Link>
+            </Grid>
           </div>
         </div>
       </>
     );
   }
 }
+
+Signup.propTypes = {
+  enqueueSnackbar: PropTypes.func.isRequired,
+  history: PropTypes.object.isRequired,
+};
+
+export default withRouter(withSnackbar(Signup));

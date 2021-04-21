@@ -12,8 +12,14 @@ function post(url, data, file) {
   }
   return axios({
     method: 'post',
-    url,
+    url: `https://www.mctzxc.com:15000/api/v1${url}`,
     data,
+  }).then((res) => {
+    if (res.data.status === 'error') {
+      throw new Error(res.data.message);
+    } else {
+      return res.data;
+    }
   });
 }
 

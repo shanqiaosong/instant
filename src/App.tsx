@@ -1,13 +1,17 @@
 import React from 'react';
-import { HashRouter as Router, Switch, Route, Link } from 'react-router-dom';
+import { HashRouter as Router, Route, Link } from 'react-router-dom';
 import { MuiPickersUtilsProvider } from '@material-ui/pickers';
+import { createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
 import MomentUtils from '@date-io/moment';
+import { SnackbarProvider } from 'notistack';
+import Grow from '@material-ui/core/Grow';
 
 import './App.global.sass';
 import { remote } from 'electron';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import Signup from './pages/Signup';
-import 'fontsource-roboto';
+import Login from './pages/Login';
+import AnimatedSwitch from './components/AnimatedSwitch';
 // import icon from '../assets/icon.svg';
 
 const Hello = () => {
@@ -38,17 +42,47 @@ const Hello = () => {
 };
 
 export default function App() {
+  const theme = createMuiTheme({
+    palette: {
+      primary: {
+        light: '#a250ff',
+        main: '#6b19ff',
+        dark: '#5908e7',
+        contrastText: '#fff',
+      },
+      secondary: {
+        light: '#e26525',
+        main: '#de1e04',
+        dark: '#871010',
+        contrastText: '#ffffff',
+      },
+    },
+  });
   return (
-    <>
-      <MuiPickersUtilsProvider utils={MomentUtils}>
-        <CssBaseline />
-        <Router>
-          <Switch>
-            <Route path="/signup" component={Signup} />
-            <Route path="/" exact component={Hello} />
-          </Switch>
-        </Router>
-      </MuiPickersUtilsProvider>
-    </>
+    <ThemeProvider theme={theme}>
+      <SnackbarProvider
+        maxSnack={1}
+        anchorOrigin={{
+          vertical: 'top',
+          horizontal: 'center',
+        }}
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        TransitionComponent={Grow}
+      >
+        <MuiPickersUtilsProvider utils={MomentUtils}>
+          <CssBaseline />
+          <div className="main-window">
+            <Router>
+              <AnimatedSwitch>
+                <Route path="/signup" component={Signup} />
+                <Route path="/login" component={Login} />
+                <Route path="/" exact component={Hello} />
+              </AnimatedSwitch>
+            </Router>
+          </div>
+        </MuiPickersUtilsProvider>
+      </SnackbarProvider>
+    </ThemeProvider>
   );
 }

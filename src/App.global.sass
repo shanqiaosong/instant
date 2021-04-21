@@ -1,5 +1,18 @@
+@font-face
+  src: url("../static/FZYouHJW_509R.ttf") format('truetype')
+  font-family: 'FZYouH'
+
 html
   overflow: hidden
+  font-size: 15px
+  body
+    background: transparent
+*
+  font-family: 'FZYouH', sans-serif!important
+::selection
+  background: #6b19ff
+  color: #f4f8fe
+
 
 @import "~react-image-crop/dist/ReactCrop.css"
 
@@ -22,3 +35,52 @@ html
     bottom: 0
   .MuiPickersCalendar-transitionContainer
     margin-bottom: 10px
+  .MuiAvatar-colorDefault
+    color: #f4f7fe
+    background-color: #5a5b5e
+  .MuiLinearProgress-root
+    position: absolute
+    top: 0
+    left: 0
+    width: 100vw
+    transition: 0.3s all
+
+.MuiCollapse-entered
+  margin: 0 auto
+  position: relative
+  top: 76px
+
+.route
+  position: absolute
+  left: 0
+  top: 0
+  width: 100%
+  height: 100%
+
+
+// 帧动画
+.fade-enter
+  opacity: 0
+
+
+.fade-enter.fade-enter-active
+  opacity: 1
+  transition: opacity 300ms ease-in
+
+
+.fade-exit
+  opacity: 1
+
+
+.fade-exit.fade-exit-active
+  opacity: 0
+  transition: opacity 300ms ease-in
+
+.main-window
+  background: linear-gradient(#f5f8fe,#eff3fd)
+  border-radius: 10px
+  box-shadow: #00000038 0 0 10px
+  margin: 10px
+  height: calc(100vh - 30px)
+  position: relative
+  overflow: hidden
