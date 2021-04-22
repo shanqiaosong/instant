@@ -12,7 +12,7 @@ const AnimatedSwitch = (props) => {
           <CSSTransition
             key={location.pathname}
             classNames="fade"
-            timeout={300}
+            timeout={250}
           >
             <Switch location={location}>{children}</Switch>
           </CSSTransition>
