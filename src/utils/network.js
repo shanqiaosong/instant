@@ -1,4 +1,5 @@
 import axios from 'axios';
+import store from '../redux/store';
 
 function post(url, data, file) {
   if (file) {
@@ -22,5 +23,33 @@ function post(url, data, file) {
     }
   });
 }
+function get(url, data, type = 'json') {
+  let sendData = data;
+  console.log(store.getState());
+  const token = store.getState().chatSlice?.token;
+  if (token) {
+    sendData = { token, ...data };
+  }
+  return axios({
+    method: 'get',
+    url: `https://www.mctzxc.com:15000/api/v1${url}`,
+    params: sendData,
+    responseType: type,
+  }).then((res) => {
+    if (res.data.status === 'error') {
+      throw new Error(res.data.message);
+    } else {
+      return res.data;
+    }
+  });
+}
 
-export default { post };
+function avatarURL(avatar) {
+  if (!avatar) return '';
+  return `https://www.mctzxc.com:15000/api/v1/getAvatar?account=${avatar.slice(
+    0,
+    -5
+  )}`;
+}
+
+export default { post, get, avatarURL };

@@ -1,0 +1,108 @@
+.wrapper
+  width: 100%
+  height: 100%
+  overflow-x: visible
+  .search
+    width: calc(100% + 15px)
+    background-color: #ffffffc2
+    border-radius: 16px
+    box-shadow: rgba(18, 58, 178, 0.04) 0 10px 10px
+    margin-top: 14px
+    margin-left: 25px
+    height: 55px
+    z-index: 101
+    //& *
+    //  border: none!important
+  .listWrap
+    height: 100%
+    position: relative
+    ::-webkit-scrollbar
+      width: 5px
+      transition: all 0.2s
+
+    ::-webkit-scrollbar-thumb
+      background: transparent
+      transition: all 0.2s
+      border-radius: 10px
+
+    &:hover
+      ::-webkit-scrollbar-thumb
+        background: #7280d777
+  .list
+    margin-top: 11px
+    overflow-y: auto
+    overflow-x: visible
+    height: calc(100% - 84px)
+    width: calc(100% + 70px)
+    padding: 0 25px 20px
+    .empty
+      text-align: center
+      opacity: 0.5
+      margin-top: 60px
+
+    &::before
+      width: calc(100% + 50px)
+      left: 8px
+      content: ''
+      height: 30px
+      background: linear-gradient(0deg, transparent, #f3f7fe)
+      position: absolute
+      z-index: 100
+      pointer-events: none
+    &::after
+      width: calc(100% + 50px)
+      left: 8px
+      content: ''
+      height: 30px
+      background: linear-gradient(180deg, transparent, #eff3fd)
+      position: absolute
+      z-index: 100
+      bottom: 83px
+      pointer-events: none
+    .friend
+      &:first-child
+        margin-top: 18px
+      display: block
+      text-align: left
+      width: 100%
+      background-color: #fafbfe
+      margin-top: 28px
+      border-radius: 16px
+      box-shadow: rgba(18, 58, 178, 0.04) 0 10px 10px
+      padding: 10px 16px
+      position: relative
+      cursor: pointer
+      transition: all 0.2s cubic-bezier(0.15, 0.5, 0.44, 0.9)
+      border: 2px solid transparent
+      .messageCnt
+        right: 27px
+        top: 24px
+        position: absolute
+      &.selected,&:hover
+        transform: scale(1.1)
+        box-shadow: #123ab222 0 10px 15px -5px
+      &.selected
+        border: 2px solid #6b19ff
+.avatar
+  width: 50px!important
+  height: 50px!important
+  border: 3px #f1f5fe solid
+  box-shadow: #484e5f42 0 3px 5px
+  margin-bottom: 3px
+.nickname
+  color: #5c5c5c
+  position: absolute
+  top: 18px
+  left: 77px
+  font-size: 14px
+.content
+  color: #374372
+  position: absolute
+  top: 38px
+  left: 77px
+  opacity: 0.5
+  font-size: 13px
+  white-space: pre
+  text-overflow: ellipsis
+  overflow: hidden
+  width: 189px

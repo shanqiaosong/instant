@@ -25,15 +25,23 @@ import Radio from '@material-ui/core/Radio';
 import { KeyboardDatePicker } from '@material-ui/pickers';
 import moment from 'moment';
 import { withSnackbar } from 'notistack';
+import Store from 'electron-store';
+import { connect } from 'react-redux';
+import { unwrapResult } from '@reduxjs/toolkit';
 import Header from '../components/Header';
 import style from './Signup.sass';
+// this is necessary
 import utils from '../utils/network';
 import animateToSize from '../utils/animateToSize';
+import animateToggleMain from '../utils/animateToggleMain';
+import { signup } from '../redux/signupSlice';
+
+const store = new Store();
 
 class Signup extends React.Component {
   width = 335;
 
-  height = 663;
+  height = 661;
 
   constructor(props) {
     super(props);
@@ -47,11 +55,11 @@ class Signup extends React.Component {
       gender: '',
       email: '',
       birthday: moment('2000-01-01'),
-      pending: false,
     };
   }
 
   componentDidMount() {
+    animateToggleMain.toggleFromMain();
     // 测试用
     this.setState({
       nickname: 'testing',
@@ -185,8 +193,8 @@ class Signup extends React.Component {
     return canvas.toDataURL('image/jpeg');
   };
 
-  handleSubmit = () => {
-    const { enqueueSnackbar, history } = this.props;
+  handleSubmit = async () => {
+    const { enqueueSnackbar, history, dispatch } = this.props;
     const fields = ['password', 'nickname', 'gender', 'email', 'birthday'];
     const { validate, state } = this;
     const data = {};
@@ -203,30 +211,55 @@ class Signup extends React.Component {
     this.setState({
       pending: true,
     });
-    utils
-      .post('/signup', data)
-      .then((res) => {
-        console.log(res);
+    try {
+      const result = unwrapResult(await dispatch(signup(data)));
+      const { password } = data;
+      const { account } = result.data;
+      const avatar = state.croppedImage;
+      store.set('login-default', {
+        account,
+        password,
+        rememberPassword: true,
+      });
+      store.set('avatar-cache', {
+        ...(store.get('avatar-cache') || {}),
+        [account]: avatar,
+      });
+      setTimeout(() => {
+        history.push('/login');
         enqueueSnackbar('注册成功', {
           variant: 'success',
           autoHideDuration: 1500,
         });
-        this.setState({
-          pending: false,
-        });
-        console.log(data);
-        history.push('/login');
-        return res;
-      })
-      .catch((e) => {
-        console.error(e);
-        enqueueSnackbar('网络或服务器错误', {
-          variant: 'error',
-        });
-        this.setState({
-          pending: false,
-        });
+      }, 300);
+    } catch (e) {
+      console.error(e);
+      enqueueSnackbar('网络或服务器错误', {
+        variant: 'error',
       });
+      this.setState({
+        pending: false,
+      });
+    }
+
+    // {
+    //   account: res.data.account,
+    //     password: data.password,
+    //   rememberPassword: true,
+    //   avatar: state.croppedImage ?? 0,
+    // }
+
+    // .then((res) => {
+    // })
+    // .catch((e) => {
+    //
+    //
+    //
+    //
+    //
+    //
+    //
+    // });
   };
 
   render() {
@@ -241,8 +274,9 @@ class Signup extends React.Component {
       gender,
       email,
       birthday,
-      pending,
     } = this.state;
+    const { pending } = this.props;
+    console.log(pending);
     return (
       <>
         <div className={[style.Signup, 'Signup'].join(' ')}>
@@ -382,10 +416,14 @@ class Signup extends React.Component {
               </FormHelperText>
             </FormControl>
             <KeyboardDatePicker
+              autoOk
+              orientation="landscape"
+              cancelLabel="取消"
+              okLabel="确定"
               error={Boolean(errors.birthday)}
               helperText={errors.birthday ?? ''}
               disableToolbar
-              variant="inline"
+              variant="dialog"
               format="yyyy-MM-DD"
               fullWidth
               label="生日"
@@ -440,6 +478,12 @@ class Signup extends React.Component {
 Signup.propTypes = {
   enqueueSnackbar: PropTypes.func.isRequired,
   history: PropTypes.object.isRequired,
+  dispatch: PropTypes.func.isRequired,
+  pending: PropTypes.bool.isRequired,
 };
 
-export default withRouter(withSnackbar(Signup));
+function stateMap({ signupSlice }) {
+  return { pending: signupSlice.pending };
+}
+
+export default connect(stateMap)(withRouter(withSnackbar(Signup)));

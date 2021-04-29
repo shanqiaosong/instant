@@ -17,34 +17,56 @@ import Avatar from '@material-ui/core/Avatar';
 import { Grid } from '@material-ui/core';
 import FormHelperText from '@material-ui/core/FormHelperText';
 import { withSnackbar } from 'notistack';
+import Store from 'electron-store';
+import { CSSTransition, TransitionGroup } from 'react-transition-group';
+import PropTypes from 'prop-types';
+import { connect } from 'react-redux';
 import Header from '../components/Header';
 import style from './Signup.sass';
 import animateToSize from '../utils/animateToSize';
+import animateToggleMain from '../utils/animateToggleMain';
+import { login } from '../redux/loginSlice';
+import { setInitInfo } from '../redux/chatSlice';
+
+const store = new Store();
 
 class Login extends React.Component {
   width = 335;
 
-  height = 460;
+  height = 452;
 
   constructor(props) {
     super(props);
     this.state = {
-      errors: {},
       showPassword: false,
       password: '',
-      pending: false,
+      avatar: null,
+      account: '',
     };
   }
 
   componentDidMount() {
     // 测试用
-    this.setState({});
     animateToSize(this.width, this.height);
+    animateToggleMain.toggleFromMain();
+
+    if (store.has('login-default')) {
+      console.log(store.get('login-default'));
+      const { password, account } = store.get('login-default');
+      const avatar = (store.get('avatar-cache') || {})[account];
+      this.setState({
+        avatar,
+        password,
+        account,
+      });
+    }
   }
 
   handleAccountChange = (e) => {
+    const account = parseInt(e.target.value, 10) || '';
     this.setState({
-      account: e.target.value,
+      account,
+      avatar: (store.get('avatar-cache') || {})[account],
     });
   };
 
@@ -63,19 +85,45 @@ class Login extends React.Component {
     });
   };
 
+  handleLogin = () => {
+    const { password, account } = this.state;
+    const { history, dispatch } = this.props;
+
+    dispatch(
+      login({
+        password,
+        account,
+      })
+    ).then((result) => {
+      if (result.meta.requestStatus === 'rejected') return;
+      store.set('login-default', { password, account });
+      dispatch(setInitInfo(result.payload.data));
+      setTimeout(() => {
+        history.push('/main');
+      }, 300);
+    });
+  };
+
   render() {
-    const { errors, showPassword, account, password, pending } = this.state;
+    const { showPassword, account, password, avatar } = this.state;
+    const { errors, pending } = this.props;
     return (
       <>
         <div className={[style.Signup, 'Signup'].join(' ')}>
-          <Header title="登录" loading={false} />
+          <Header title="登录" loading={pending} />
           <div className={style.draggable} />
           <div className={style.avatarWrap}>
-            <Avatar className={style.avatar} />
+            <TransitionGroup>
+              <CSSTransition key={avatar} classNames="fade" timeout={250}>
+                <Avatar src={avatar} className={style.avatar} />
+              </CSSTransition>
+            </TransitionGroup>
           </div>
           <div className={style.inputs}>
             <TextField
               onChange={this.handleAccountChange}
+              error={Boolean(errors.account)}
+              helperText={errors.account ?? ''}
               value={account}
               fullWidth
               label="账号"
@@ -107,7 +155,7 @@ class Login extends React.Component {
 
             <Grid container justify="center">
               <Button
-                onClick={this.handleSubmit}
+                onClick={this.handleLogin}
                 variant="contained"
                 color="primary"
                 className={style.submit}
@@ -133,6 +181,14 @@ class Login extends React.Component {
   }
 }
 
-Login.propTypes = {};
+Login.propTypes = {
+  history: PropTypes.object.isRequired,
+  pending: PropTypes.bool.isRequired,
+  errors: PropTypes.object.isRequired,
+  dispatch: PropTypes.func.isRequired,
+};
+function stateMap({ loginSlice }) {
+  return { pending: loginSlice.pending, errors: loginSlice.errors };
+}
 
-export default withRouter(withSnackbar(Login));
+export default connect(stateMap)(withRouter(withSnackbar(Login)));

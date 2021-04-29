@@ -1,48 +1,36 @@
 import React from 'react';
-import { HashRouter as Router, Route, Link } from 'react-router-dom';
+import { HashRouter as Router, Route, Redirect } from 'react-router-dom';
 import { MuiPickersUtilsProvider } from '@material-ui/pickers';
 import { createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
 import MomentUtils from '@date-io/moment';
+import moment from 'moment';
 import { SnackbarProvider } from 'notistack';
 import Grow from '@material-ui/core/Grow';
 
 import './App.global.sass';
-import { remote } from 'electron';
 import CssBaseline from '@material-ui/core/CssBaseline';
+import { Provider } from 'react-redux';
 import Signup from './pages/Signup';
 import Login from './pages/Login';
 import AnimatedSwitch from './components/AnimatedSwitch';
-// import icon from '../assets/icon.svg';
+import Main from './pages/Main';
+import store from './redux/store';
+
+moment.locale('zh-cn');
 
 const Hello = () => {
-  return (
-    <div>
-      hhhh
-      <Link to="/test">Hello</Link>
-      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events,jsx-a11y/interactive-supports-focus */}
-      <div
-        role="button"
-        onClick={() => {
-          let width = 1024;
-          let height = 728;
-          const intv = setInterval(() => {
-            width -= 8;
-            height -= 8;
-            remote.getCurrentWindow().setSize(width, height);
-            if (width <= 500 || height <= 500) {
-              clearInterval(intv);
-            }
-          });
-        }}
-      >
-        Change size
-      </div>
-    </div>
-  );
+  return <Redirect to="/login" />;
 };
 
 export default function App() {
   const theme = createMuiTheme({
+    overrides: {
+      MuiTouchRipple: {
+        child: {
+          backgroundColor: 'rgba(176,176,255,0.88)',
+        },
+      },
+    },
     palette: {
       primary: {
         light: '#a250ff',
@@ -59,30 +47,33 @@ export default function App() {
     },
   });
   return (
-    <ThemeProvider theme={theme}>
-      <SnackbarProvider
-        maxSnack={1}
-        anchorOrigin={{
-          vertical: 'top',
-          horizontal: 'center',
-        }}
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        TransitionComponent={Grow}
-      >
-        <MuiPickersUtilsProvider utils={MomentUtils}>
-          <CssBaseline />
-          <div className="main-window">
-            <Router>
-              <AnimatedSwitch>
-                <Route path="/signup" component={Signup} />
-                <Route path="/login" component={Login} />
-                <Route path="/" exact component={Hello} />
-              </AnimatedSwitch>
-            </Router>
-          </div>
-        </MuiPickersUtilsProvider>
-      </SnackbarProvider>
-    </ThemeProvider>
+    <Provider store={store}>
+      <ThemeProvider theme={theme}>
+        <SnackbarProvider
+          maxSnack={1}
+          anchorOrigin={{
+            vertical: 'top',
+            horizontal: 'center',
+          }}
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          TransitionComponent={Grow}
+        >
+          <MuiPickersUtilsProvider utils={MomentUtils}>
+            <CssBaseline />
+            <div className="main-window">
+              <Router>
+                <AnimatedSwitch>
+                  <Route path="/signup" component={Signup} />
+                  <Route path="/login" component={Login} />
+                  <Route path="/main" component={Main} />
+                  <Route path="/" exact component={Hello} />
+                </AnimatedSwitch>
+              </Router>
+            </div>
+          </MuiPickersUtilsProvider>
+        </SnackbarProvider>
+      </ThemeProvider>
+    </Provider>
   );
 }

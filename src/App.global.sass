@@ -35,15 +35,18 @@ html
     bottom: 0
   .MuiPickersCalendar-transitionContainer
     margin-bottom: 10px
-  .MuiAvatar-colorDefault
-    color: #f4f7fe
-    background-color: #5a5b5e
-  .MuiLinearProgress-root
-    position: absolute
-    top: 0
-    left: 0
-    width: 100vw
-    transition: 0.3s all
+.MuiLinearProgress-root
+  position: absolute!important
+  top: 0
+  left: 0
+  width: 100vw
+  transition: 0.3s all
+  height: 4px!important
+
+
+.MuiAvatar-colorDefault
+  color: #f4f7fe!important
+  background-color: #5a5b5e!important
 
 .MuiCollapse-entered
   margin: 0 auto
@@ -79,8 +82,62 @@ html
 .main-window
   background: linear-gradient(#f5f8fe,#eff3fd)
   border-radius: 10px
-  box-shadow: #00000038 0 0 10px
-  margin: 10px
-  height: calc(100vh - 30px)
-  position: relative
+  height: 100%
+  width: 100%
+  position: absolute
+  //overflow: hidden
+  right: 0
+  &.mainStatus
+    border-radius: 18px 0 0 18px
+  &.shrink
+    transition: 0.3s cubic-bezier(0.09, 0.55, 0.35, 0.99) width
+    width: calc(100vw - 220px)
+  &.noAnimate
+    transition: none
+#root
+  background: linear-gradient(#b48dff,#687ed1)
   overflow: hidden
+  border-radius: 10px
+  margin: 10px
+  height: calc(100vh - 20px)
+  width: calc(100vw - 20px)
+  //transition: 0.3s all
+  box-shadow: #00000038 0 0 10px
+  position: absolute
+  top: 0
+  left: 0
+  &.mainStatus
+    border-radius: 18px
+.MuiBackdrop-root
+  margin: 10px
+  height: calc(100vh - 20px)
+  border-radius: 10px
+  overflow: hidden
+.MuiPickersModal-dialogRoot
+  box-shadow: #00000038 0 0 10px!important
+
+.Main
+  ul
+    padding-left: 24px
+    margin-top: 7px
+  .MuiOutlinedInput-root
+    border-radius: 16px
+    border-color: transparent
+    height: 100%
+    ::placeholder
+      color: #37437280
+      opacity: 1
+    .MuiOutlinedInput-notchedOutline
+      border-color: transparent
+      transition: all 0.2s
+    &:hover:not(.Mui-error)
+      .MuiOutlinedInput-notchedOutline
+        border-color: #a48af5
+  .MuiInputLabel-outlined
+    transform: translate(20px, 20px) scale(1)
+    color: #37437280
+
+.MuiAvatar-img
+  border-radius: 50%
+.MuiBadge-anchorOriginTopRightRectangle:not(.MuiBadge-invisible)
+  transform: scale(0.9) translate(50%, -50%) !important

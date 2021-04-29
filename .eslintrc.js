@@ -5,6 +5,11 @@ module.exports = {
     'import/no-extraneous-dependencies': 'off',
     'react/forbid-prop-types': 'off',
     'no-console': 'off',
+    'react/jsx-props-no-spreading': 'off',
+    'promise/always-return': 'off',
+    'promise/catch-or-return': 'off',
+    'no-return-assign': 'off',
+    'import/no-cycle': 'off',
   },
   parserOptions: {
     ecmaVersion: 2020,
