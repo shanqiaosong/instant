@@ -14,12 +14,12 @@ import Snackbar from '@material-ui/core/Snackbar';
 import MuiAlert from '@material-ui/lab/Alert';
 import { Divider } from '@material-ui/core';
 import animateToSize from '../utils/animateToSize';
-import LeftList from '../components/LeftList';
 import animateToggleMain from '../utils/animateToggleMain';
 import style from './Main.sass';
-import Friends from '../components/Friends';
 import Header from '../components/Header';
 import Info from '../components/Info';
+import Friends from '../components/Friends';
+import LeftList from '../components/LeftList';
 import {
   closeAddConfirm,
   closeAddDialog,
@@ -82,6 +82,10 @@ class Main extends React.Component {
     window.socket.io.on('reconnect', () => {
       dispatch(reconnect());
     });
+  }
+
+  componentWillUnmount() {
+    clearInterval(window.pingIntv);
   }
 
   handleClose = () => {

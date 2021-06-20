@@ -1,10 +1,14 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 // eslint-disable-next-line import/no-cycle
+import Base64 from 'crypto-js/enc-base64';
+import Utf8 from 'crypto-js/enc-utf8';
 import network from '../utils/network';
 
+// 搜索账号
 const searchAccount = createAsyncThunk('searchAccount', (data) => {
   return network.get('/search', { toUser: data });
 });
+// 发送好友请求
 const sendRequest = createAsyncThunk('sendRequest', (data, thunkAPI) => {
   return new Promise((resolve, reject) => {
     const {
@@ -32,6 +36,7 @@ const sendRequest = createAsyncThunk('sendRequest', (data, thunkAPI) => {
     setTimeout(reject, 4000);
   });
 });
+// 收到好友请求
 const incomingRequest = createAsyncThunk('incomingRequest', (data) => {
   console.log('incomingRequest', data);
   return new Promise((resolve, reject) => {
@@ -45,6 +50,7 @@ const incomingRequest = createAsyncThunk('incomingRequest', (data) => {
       .catch((err) => reject(err));
   });
 });
+// 通过申请
 const confirmRequest = createAsyncThunk('confirmRequest', (data, thunkAPI) => {
   return new Promise((resolve, reject) => {
     const { token, account: fromUser } = thunkAPI.getState().chatSlice;
@@ -68,11 +74,13 @@ const confirmRequest = createAsyncThunk('confirmRequest', (data, thunkAPI) => {
     setTimeout(reject, 4000);
   });
 });
+// 获取历史消息记录
 const displayHistory = createAsyncThunk('displayHistory', (data, thunkAPI) => {
   return network.get('/history', {
     toUser: thunkAPI.getState().chatSlice.selectedFriend.account,
   });
 });
+// 发消息
 const sendMessage = createAsyncThunk('sendMessage', (data, thunkAPI) => {
   console.log(thunkAPI.getState());
   return new Promise((resolve, reject) => {
@@ -88,7 +96,7 @@ const sendMessage = createAsyncThunk('sendMessage', (data, thunkAPI) => {
         fromUser,
         toUser,
         type: 'text',
-        content,
+        content: Base64.stringify(Utf8.parse(content)),
         clientID,
       },
     });
@@ -103,16 +111,26 @@ const sendMessage = createAsyncThunk('sendMessage', (data, thunkAPI) => {
     setTimeout(reject, 4000);
   });
 });
+// 对方同意
 const newFriend = createAsyncThunk('newFriend', ({ fromUser: toUser }) => {
   return network.get('/search', { toUser });
 });
+// 周期与服务器同步
 const ping = createAsyncThunk('ping', (data, thunkAPI) => {
   const { token } = thunkAPI.getState().chatSlice;
   return network.post('/ping', { token });
 });
+// 删除好友
+const deleteFriend = createAsyncThunk(
+  'deleteFriend',
+  ({ toUser }, thunkAPI) => {
+    const { token } = thunkAPI.getState().chatSlice;
+    return network.post('/delete', { token, toUser });
+  }
+);
 
 function changeLastMessage(state, account, message, addCnt = 0) {
-  const friendPos = state.friends.findIndex(
+  const friendPos = state.fricends.findIndex(
     (value) => value.account === account
   );
   if (friendPos === -1) return friendPos;
@@ -204,6 +222,9 @@ export const chatSlice = createSlice({
     },
     incomingMessage(state, action) {
       console.log(action.payload);
+      action.payload.content = Utf8.stringify(
+        Base64.parse(action.payload.content)
+      );
       const { fromUser: account, content: message } = action.payload;
       changeLastMessage(state, account, message, 1);
       if (state.selectedFriend?.account === account) {
@@ -260,14 +281,14 @@ export const chatSlice = createSlice({
       showSnack(state, '网络错误，无法发送请求', 'error');
     },
     [incomingRequest.fulfilled]: (state, action) => {
-      const { avatar, account, nickname, content, id } = action.payload;
+      const { avatar, account, nickname, content, id, online } = action.payload;
       const friendPos = state.friends.findIndex(
         (value) => value.account === account
       );
       console.log(friendPos);
 
       if (friendPos > -1) {
-        state.friends[friendPos].last_message.content = `好友请求：${content}`;
+        state.friends[friendPos].last_message.content = content;
         state.friends[friendPos].requests?.push({ id, content });
         state.friends[friendPos].messageCnt += 1;
       } else {
@@ -275,10 +296,11 @@ export const chatSlice = createSlice({
           avatar,
           account,
           nickname,
-          last_message: { content: `好友请求：${content}` },
+          last_message: { content, type: 'request' },
           messageCnt: 1,
           requests: [{ id, content }],
           isRequest: true,
+          online,
         });
       }
     },
@@ -355,7 +377,7 @@ export const chatSlice = createSlice({
       state.friends.push({
         account,
         avatar,
-        last_message: { content: '我通过了你的好友请求' },
+        last_message: { content: '我通过了你的好友请求', type: 'reply' },
         nickname,
         online,
       });
@@ -377,14 +399,36 @@ export const chatSlice = createSlice({
       state.mainLoading = true;
     },
     [ping.fulfilled]: (state, action) => {
-      state.friends = action.payload.data.friends;
-      if (action.data.token) {
-        state.token = action.data.token;
+      state.friends = state.friends
+        .filter(({ isRequest }) => isRequest)
+        .concat(action.payload.data.friends);
+      if (action.payload.data.token) {
+        state.token = action.payload.data.token;
       }
+      state.mainLoading = false;
     },
     [ping.rejected]: (state) => {
       state.mainLoading = false;
       showSnack(state, '无法连接服务器', 'error');
+    },
+    [deleteFriend.pending]: (state) => {
+      state.mainLoading = true;
+    },
+    [deleteFriend.fulfilled]: (state, action) => {
+      console.log(state, action);
+      state.friends.splice(
+        state.friends.findIndex(
+          ({ account }) => account === action.meta.arg.toUser
+        ),
+        1
+      );
+      showSnack(state, '已删除', 'success');
+      state.selectedFriend = {};
+      state.mainLoading = false;
+    },
+    [deleteFriend.rejected]: (state) => {
+      state.mainLoading = false;
+      showSnack(state, '删除好友失败', 'error');
     },
   },
 });
@@ -447,4 +491,5 @@ export {
   recvMessageCenter,
   getNewMessage,
   ping,
+  deleteFriend,
 };

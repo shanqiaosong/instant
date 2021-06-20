@@ -3,7 +3,6 @@ import TextField from '@material-ui/core/TextField';
 import IconButton from '@material-ui/core/IconButton';
 import {
   Check,
-  CheckCircleOutline,
   EmojiPeople,
   ErrorOutline,
   Help,
@@ -16,6 +15,7 @@ import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import { Tooltip } from '@material-ui/core';
+import { Picker } from 'emoji-mart';
 import style from './Dialog.sass';
 import { clearDot, displayHistory, sendMessage } from '../redux/chatSlice';
 
@@ -25,6 +25,7 @@ class ChatDialog extends React.Component {
     this.state = {
       input: '',
       error: '',
+      showEmoji: false,
     };
   }
 
@@ -41,6 +42,13 @@ class ChatDialog extends React.Component {
     if (history.length !== prevProps.history.length) this.toBottom();
   }
 
+  selectEmoji = (emoji) => {
+    this.setState(({ input }) => ({
+      input: input + emoji.native,
+      showEmoji: false,
+    }));
+  };
+
   handleSend = () => {
     const { dispatch } = this.props;
     const { input } = this.state;
@@ -49,6 +57,7 @@ class ChatDialog extends React.Component {
     });
     if (!input) return;
     const clientID = String(Date.now()) + String(Math.random());
+    console.log(input, clientID);
     dispatch(sendMessage({ input, clientID }));
     this.setState({ input: '' });
   };
@@ -101,7 +110,7 @@ class ChatDialog extends React.Component {
 
   render() {
     const { history, account, dispatch, friendAccount } = this.props;
-    const { input, error } = this.state;
+    const { input, error, showEmoji } = this.state;
     if (!friendAccount) {
       return <div />;
     }
@@ -137,7 +146,9 @@ class ChatDialog extends React.Component {
                       </Tooltip>
                     )}
                   </div>
-                  <div className={style.pop}>{this.showContent(diag)}</div>
+                  <div className={style.pop}>
+                    {diag && this.showContent(diag)}
+                  </div>
                   <div className={style.time}>
                     {this.showTime(diag.createdAt) || (
                       <MoreHoriz className={style.noTime} />
@@ -157,13 +168,33 @@ class ChatDialog extends React.Component {
             value={input}
             onChange={(e) => this.setState({ input: e.target.value })}
             onKeyPress={(ev) => {
-              if (ev.key === 'Enter') {
+              if (ev.key === 'Enter' && !ev.shiftKey) {
                 this.handleSend();
                 ev.preventDefault();
+              } else if (ev.key === 'Enter') {
+                this.setState(({ input: originalInput }) => ({
+                  input: `${originalInput}\n`,
+                }));
               }
             }}
           />
-          <IconButton className={style.emojiBtn}>
+          {showEmoji && (
+            <div className={style.picker}>
+              <Picker
+                showPreview={false}
+                showSkinTones={false}
+                onSelect={this.selectEmoji}
+              />
+            </div>
+          )}
+          <IconButton
+            onClick={() => {
+              this.setState({
+                showEmoji: true,
+              });
+            }}
+            className={style.emojiBtn}
+          >
             <InsertEmoticon />
           </IconButton>
           <IconButton

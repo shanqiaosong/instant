@@ -6,7 +6,7 @@ import Badge from '@material-ui/core/Badge';
 import { withStyles } from '@material-ui/core/styles';
 import PropTypes from 'prop-types';
 import { ButtonBase } from '@material-ui/core';
-import { PersonAdd } from '@material-ui/icons';
+import { EmojiPeople, Help, HowToReg, PersonAdd } from '@material-ui/icons';
 import { connect } from 'react-redux';
 import ClickAwayListener from '@material-ui/core/ClickAwayListener';
 import style from './Friends.sass';
@@ -95,6 +95,31 @@ class Friends extends React.Component {
     dispatch(searchAccount(searching));
   };
 
+  showContent = (diag) => {
+    if (diag.type === 'text') {
+      return diag.content;
+    }
+    if (diag.type.includes('reply')) {
+      return (
+        <div>
+          <HowToReg className={style.typeIcon} /> 我通过了你的好友请求
+        </div>
+      );
+    }
+    if (diag.type === 'requested' || diag.type === 'request') {
+      return (
+        <div>
+          <EmojiPeople className={style.typeIcon} /> {diag.content}
+        </div>
+      );
+    }
+    return (
+      <div>
+        <Help className={style.typeIcon} /> 未识别的消息
+      </div>
+    );
+  };
+
   render() {
     const { searching } = this.state;
     const { friends, searchErr, dispatch, selectedFriend } = this.props;
@@ -136,7 +161,7 @@ class Friends extends React.Component {
                 online,
                 avatar,
                 messageCnt,
-                last_message: { content },
+                last_message: { type, content },
                 isRequest,
               } = friend;
               return (
@@ -170,7 +195,9 @@ class Friends extends React.Component {
                     />
                   </StyledBadge>
                   <div className={style.nickname}>{nickname}</div>
-                  <div className={style.content}>{content}</div>
+                  <div className={style.content}>
+                    {this.showContent({ type, content })}
+                  </div>
 
                   <Badge
                     color="error"

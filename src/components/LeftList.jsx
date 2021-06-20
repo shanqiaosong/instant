@@ -18,11 +18,12 @@ class LeftList extends React.Component {
   }
 
   render() {
-    const { nickname, avatar, dispatch } = this.props;
+    const { nickname, avatar, dispatch, account } = this.props;
     return (
       <div className={style.wrapper}>
         <Avatar src={network.avatarURL(avatar)} className={style.avatar} />
         <div className={style.nickname}>{nickname}</div>
+        <div className={style.account}>{account}</div>
         <div className={style.tabs}>
           <ButtonBase className={[style.tab, style.chosen].join(' ')}>
             <Link to="/login">
@@ -54,7 +55,7 @@ class LeftList extends React.Component {
 
 LeftList.propTypes = {
   nickname: PropTypes.string.isRequired,
-  // account: PropTypes.number.isRequired,
+  account: PropTypes.number.isRequired,
   avatar: PropTypes.string.isRequired,
   dispatch: PropTypes.func.isRequired,
 };
