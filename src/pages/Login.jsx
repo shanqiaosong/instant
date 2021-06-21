@@ -161,7 +161,7 @@ class Login extends React.Component {
                 className={style.submit}
                 disabled={pending}
               >
-                登陆
+                登录
               </Button>
               <Link to="/signup">
                 <Button

@@ -11,4 +11,6 @@ const state = configureStore({
   },
 });
 
+window.store = state;
+
 export default state;

@@ -4,9 +4,18 @@
   border-radius: 16px
   box-shadow: rgba(18, 58, 178, 0.04) 0 10px 10px
   padding: 24px 15px 24px 20px
-  transition: all 0.2s ease-in-out
+  //transition: all 0.2s ease-in-out
   height: 100%
-
+  display: flex
+  flex-direction: column
+  animation: appear 0.3s
+  @keyframes appear
+    0%
+      opacity: 0
+      transform: translate(0, -10px)
+    100%
+      opacity: 1
+      transform: translate(0, 0)
 
   ::-webkit-scrollbar
     width: 5px
@@ -21,8 +30,8 @@
     ::-webkit-scrollbar-thumb
       background: #7280d777
   .dialogList
-    display: flex
-    flex-direction: column-reverse
+    //display: flex
+    //flex-direction: column-reverse
     height: calc(100% - 75px)
     overflow-y: auto
     overflow-x: hidden
@@ -38,7 +47,19 @@
       display: flex
       flex-wrap: wrap
       height: fit-content
+      @keyframes createBox
+        from
+          transform: scale(0)
+        to
+          transform: scale(1)
+      .emoji
+        font-size: 50px
+        margin: -8px -8px -3px
+        animation: createBox .25s
+        animation-timing-function: cubic-bezier(0.29, 1.43, 0.65, 1.14)
       .pop
+        animation: createBox .25s
+        animation-timing-function: cubic-bezier(0.29, 1.43, 0.65, 1.14)
         padding: 12px
         border-radius: 10px
         width: max-content
@@ -49,7 +70,7 @@
         min-height: 36px
         height: fit-content
         overflow-wrap: break-word
-        line-height: 16px
+        line-height: 20px
         white-space: pre-wrap
         .typeIcon
           font-size: 1.7em
@@ -83,6 +104,7 @@
           background-color: #6b19ff
           color: white
           border-bottom-right-radius: 0
+          transform-origin: right bottom
           &:after
             position: absolute
             bottom: 0
@@ -99,6 +121,7 @@
           background-color: #edf2fc
           color: #515465
           border-bottom-left-radius: 0
+          transform-origin: left bottom
           &:after
             position: absolute
             bottom: 0
@@ -110,20 +133,21 @@
   .inputBox
     width: 100%
     margin-right: 10px
-    height: 70px
     line-height: 70px
     border-radius: 16px
     background-color: white
     box-shadow: #e0e7f880 0 3px 30px
+    display: flex
+    align-items: center
+    padding: 10px
     .picker
       position: absolute
       bottom: 81px
       right: 33px
       z-index: 1000
     .input
-      height: 70px
       width: calc(100% - 100px)
-      input
-        padding-left: 20px
+      line-height: 22px
+      padding: 2px 2px 2px 5px
       & *
         border: none!important

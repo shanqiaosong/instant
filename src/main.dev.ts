@@ -11,10 +11,11 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import path from 'path';
-import { app, BrowserWindow, shell } from 'electron';
+import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import Store from 'electron-store';
+import crypto from 'crypto';
 import MenuBuilder from './menu';
 
 Store.initRenderer();
@@ -84,7 +85,7 @@ const createWindow = async () => {
   });
 
   // mainWindow.loadURL(`file://${__dirname}/index.html`);
-  mainWindow.loadURL(`file://${__dirname}/index.html#/signup`);
+  mainWindow.loadURL(`file://${__dirname}/index.html#/login`);
 
   // @TODO: Use 'ready-to-show' event
   //        https://github.com/electron/electron/blob/master/docs/api/browser-window.md#using-ready-to-show-event
@@ -136,4 +137,15 @@ app.on('activate', () => {
   // On macOS it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (mainWindow === null) createWindow();
+});
+
+ipcMain.on('generateKey', (event) => {
+  const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+    // The standard secure default length for RSA keys is 2048 bits
+    modulusLength: 2048,
+  });
+  event.returnValue = {
+    publicKey: publicKey.export({ format: 'pem', type: 'spki' }),
+    privateKey: privateKey.export({ format: 'pem', type: 'pkcs1' }),
+  };
 });

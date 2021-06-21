@@ -2,11 +2,22 @@
   border-radius: 16px
   box-shadow: rgba(18, 58, 178, 0.04) 0 10px 10px
   padding: 10px 16px
-  transition: all 0.2s ease-in-out
   background-color: #fafbfe
+  animation: appear 0.3s
+  @keyframes appear
+    0%
+      opacity: 0
+      transform: translate(0, -10px)
+    100%
+      opacity: 1
+      transform: translate(0, 0)
   .delete
     position: absolute
     right: 15px
+    top: 13px
+  .sendKey
+    position: absolute
+    right: 55px
     top: 13px
 
 .inner
@@ -23,6 +34,11 @@
     top: 6px
     left: 63px
     font-size: 14px
+    .lock
+      font-size: 16px
+      vertical-align: middle
+      color: rgb(68, 183, 0)
+      cursor: pointer
   .content
     color: #374372
     position: absolute
@@ -30,3 +46,4 @@
     left: 63px
     opacity: 0.5
     font-size: 13px
+    user-select: all

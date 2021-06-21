@@ -464,7 +464,7 @@ class Signup extends React.Component {
                   className={style.submit}
                   disabled={pending}
                 >
-                  已有账号，直接登陆
+                  已有账号，直接登录
                 </Button>
               </Link>
             </Grid>

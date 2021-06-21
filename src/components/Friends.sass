@@ -2,6 +2,16 @@
   width: 100%
   height: 100%
   overflow-x: visible
+  animation: appear 1.2s
+  @keyframes appear
+    0%
+      opacity: 0
+    50%
+      opacity: 0
+      transform: translate(0, -10px)
+    100%
+      opacity: 1
+      transform: translate(0, 0)
   .search
     width: calc(100% + 15px)
     background-color: #ffffffc2
@@ -33,7 +43,7 @@
     overflow-y: auto
     overflow-x: visible
     height: calc(100% - 84px)
-    width: calc(100% + 70px)
+    width: calc(100% + 65px)
     padding: 0 25px 20px
     .empty
       text-align: center
@@ -102,10 +112,10 @@
   left: 77px
   opacity: 0.5
   font-size: 13px
-  white-space: pre
   text-overflow: ellipsis
   overflow: hidden
   width: 189px
-.typeIcon
-  font-size: 20px
-  vertical-align: middle
+  white-space: nowrap
+  .typeIcon
+    font-size: 19px
+    vertical-align: middle

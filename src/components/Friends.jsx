@@ -6,7 +6,14 @@ import Badge from '@material-ui/core/Badge';
 import { withStyles } from '@material-ui/core/styles';
 import PropTypes from 'prop-types';
 import { ButtonBase } from '@material-ui/core';
-import { EmojiPeople, Help, HowToReg, PersonAdd } from '@material-ui/icons';
+import {
+  EmojiPeople,
+  Help,
+  HowToReg,
+  Lock,
+  PersonAdd,
+  VpnKey,
+} from '@material-ui/icons';
 import { connect } from 'react-redux';
 import ClickAwayListener from '@material-ui/core/ClickAwayListener';
 import style from './Friends.sass';
@@ -110,6 +117,20 @@ class Friends extends React.Component {
       return (
         <div>
           <EmojiPeople className={style.typeIcon} /> {diag.content}
+        </div>
+      );
+    }
+    if (diag.type === 'key') {
+      return (
+        <div>
+          <VpnKey className={style.typeIcon} /> 这是我的公钥
+        </div>
+      );
+    }
+    if (diag.type === 'secured') {
+      return (
+        <div>
+          <Lock className={style.typeIcon} /> 加密的消息
         </div>
       );
     }

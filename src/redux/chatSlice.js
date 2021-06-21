@@ -1,8 +1,14 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 // eslint-disable-next-line import/no-cycle
-import Base64 from 'crypto-js/enc-base64';
-import Utf8 from 'crypto-js/enc-utf8';
 import network from '../utils/network';
+import {
+  decrypt,
+  encrypt,
+  fromBase64,
+  getMyKey,
+  processChat,
+  toBase64,
+} from '../utils/security';
 
 // 搜索账号
 const searchAccount = createAsyncThunk('searchAccount', (data) => {
@@ -11,6 +17,7 @@ const searchAccount = createAsyncThunk('searchAccount', (data) => {
 // 发送好友请求
 const sendRequest = createAsyncThunk('sendRequest', (data, thunkAPI) => {
   return new Promise((resolve, reject) => {
+    console.log('hello');
     const {
       token,
       account: fromUser,
@@ -68,35 +75,50 @@ const confirmRequest = createAsyncThunk('confirmRequest', (data, thunkAPI) => {
     });
     window.socket.once('verifySend', (result) => {
       if (result.clientID === clientID) {
-        resolve(data);
+        resolve(result);
       }
     });
     setTimeout(reject, 4000);
   });
 });
 // 获取历史消息记录
-const displayHistory = createAsyncThunk('displayHistory', (data, thunkAPI) => {
-  return network.get('/history', {
-    toUser: thunkAPI.getState().chatSlice.selectedFriend.account,
-  });
-});
+const displayHistory = createAsyncThunk(
+  'displayHistory',
+  ({ lastID }, thunkAPI) => {
+    return network.get('/history', {
+      toUser: thunkAPI.getState().chatSlice.selectedFriend.account,
+      startid: lastID + 1,
+      number: 5,
+    });
+  }
+);
+const getMoreHistory = createAsyncThunk(
+  'getMoreHistory',
+  ({ lastID }, thunkAPI) => {
+    return network.get('/history', {
+      toUser: thunkAPI.getState().chatSlice.selectedFriend.account,
+      startid: lastID,
+      number: 5,
+    });
+  }
+);
 // 发消息
 const sendMessage = createAsyncThunk('sendMessage', (data, thunkAPI) => {
-  console.log(thunkAPI.getState());
   return new Promise((resolve, reject) => {
     const {
       token,
       account: fromUser,
       selectedFriend: { account: toUser },
     } = thunkAPI.getState().chatSlice;
-    const { input: content, clientID } = data;
+    const { input: content, clientID, type, useKey } = data;
+
     window.socket.emit('sendMessage', {
       token,
       message: {
         fromUser,
         toUser,
-        type: 'text',
-        content: Base64.stringify(Utf8.parse(content)),
+        type,
+        content: encrypt(toBase64(content), useKey),
         clientID,
       },
     });
@@ -129,14 +151,27 @@ const deleteFriend = createAsyncThunk(
   }
 );
 
-function changeLastMessage(state, account, message, addCnt = 0) {
-  const friendPos = state.fricends.findIndex(
+function changeLastMessage(state, account, message, addCnt = 0, type, id) {
+  const friendPos = state.friends.findIndex(
     (value) => value.account === account
   );
   if (friendPos === -1) return friendPos;
   state.friends[friendPos].last_message.content = message;
+  if (id) state.friends[friendPos].last_message.id = id;
+  state.friends[friendPos].last_message.type = type || 'text';
   state.friends[friendPos].messageCnt =
     (state.friends[friendPos].messageCnt || 0) + addCnt;
+  console.log(state.friends[friendPos]);
+  return friendPos;
+}
+
+function changeLastMessageID(state, account, id) {
+  const friendPos = state.friends.findIndex(
+    (value) => value.account === account
+  );
+  if (friendPos === -1) return friendPos;
+  if (state.friends[friendPos].last_message.id < id)
+    state.friends[friendPos].last_message.id = id;
   return friendPos;
 }
 
@@ -169,6 +204,7 @@ const initialState = {
   showAddConfirm: false,
   selectedFriend: {},
   history: [],
+  keys: {},
 };
 
 export const chatSlice = createSlice({
@@ -193,7 +229,12 @@ export const chatSlice = createSlice({
       state.gender = gender;
       state.birthday = birthday;
       state.token = token;
-      state.friends = friends;
+      state.friends = friends.map((friend) => {
+        if (friend.last_message.type === 'text') {
+          friend.last_message.content = fromBase64(friend.last_message.content);
+        }
+        return friend;
+      });
       state.avatar = avatar;
     },
     closeAddDialog(state) {
@@ -222,11 +263,9 @@ export const chatSlice = createSlice({
     },
     incomingMessage(state, action) {
       console.log(action.payload);
-      action.payload.content = Utf8.stringify(
-        Base64.parse(action.payload.content)
-      );
-      const { fromUser: account, content: message } = action.payload;
-      changeLastMessage(state, account, message, 1);
+      action.payload.content = fromBase64(action.payload.content);
+      const { fromUser: account, content: message, type, id } = action.payload;
+      changeLastMessage(state, account, message, 1, type, id);
       if (state.selectedFriend?.account === account) {
         state.history.push(action.payload);
       }
@@ -249,6 +288,9 @@ export const chatSlice = createSlice({
     },
     reconnect(state) {
       state.mainLoading = false;
+    },
+    saveKey(state, action) {
+      state.keys[action.payload.user] = action.payload.key;
     },
   },
   extraReducers: {
@@ -288,9 +330,12 @@ export const chatSlice = createSlice({
       console.log(friendPos);
 
       if (friendPos > -1) {
-        state.friends[friendPos].last_message.content = content;
-        state.friends[friendPos].requests?.push({ id, content });
+        state.friends[friendPos].last_message = { content, type: 'request' };
+        if (state.friends[friendPos].requests)
+          state.friends[friendPos].requests.push({ id, content });
+        else state.friends[friendPos].requests = [{ id, content }];
         state.friends[friendPos].messageCnt += 1;
+        state.friends[friendPos].isRequest = true;
       } else {
         state.friends.unshift({
           avatar,
@@ -312,11 +357,16 @@ export const chatSlice = createSlice({
     },
     [confirmRequest.fulfilled]: (state, action) => {
       showSnack(state, '已确认', 'success');
+      const { id } = action.payload;
+      console.log(id);
       const friendIndex = state.friends.findIndex(
         (friend) => friend.account === action.payload.toUser
       );
       state.friends[friendIndex].last_message.content = '我通过了你的好友请求';
+      state.friends[friendIndex].last_message.type = 'reply';
+      state.friends[friendIndex].last_message.id = id;
       state.friends[friendIndex].isRequest = false;
+      state.friends[friendIndex].requests = [];
       state.showAddConfirm = false;
     },
     [confirmRequest.rejected]: (state) => {
@@ -327,40 +377,64 @@ export const chatSlice = createSlice({
     },
     [displayHistory.fulfilled]: (state, action) => {
       state.mainLoading = false;
-      state.history = action.payload.data;
+      console.log(action.payload.data);
+      state.history = action.payload.data
+        .sort(({ id: idA }, { id: idB }) => idA - idB)
+        .map((chat) => processChat(chat, state));
+      console.log(state.history.length);
     },
     [displayHistory.rejected]: (state) => {
       showSnack(state, '网络错误，无法展示历史记录', 'error');
     },
+    [getMoreHistory.pending]: (state) => {
+      state.mainLoading = true;
+    },
+    [getMoreHistory.fulfilled]: (state, action) => {
+      state.mainLoading = false;
+      state.history = [
+        ...action.payload.data
+          .filter(({ id }) => id < state.history[0].id)
+          .sort(({ id: idA }, { id: idB }) => idA - idB)
+          .map((chat) => processChat(chat, state)),
+        ...state.history,
+      ];
+    },
+    [getMoreHistory.rejected]: (state) => {
+      showSnack(state, '网络错误，无法展示历史记录', 'error');
+    },
     [sendMessage.pending]: (state, action) => {
-      const {
-        account: fromUser,
-        selectedFriend: { account: toUser },
-      } = state;
-      const { input: content, clientID } = action.meta.arg;
-      state.history.push({
-        fromUser,
-        toUser,
-        content,
-        clientID,
-        type: 'text',
-        pending: true,
-        id: clientID,
-      });
-      changeLastMessage(state, toUser, content);
+      try {
+        const {
+          account: fromUser,
+          selectedFriend: { account: toUser },
+        } = state;
+        const { input: content, clientID, type } = action.meta.arg;
+        state.history.push({
+          fromUser,
+          toUser,
+          content,
+          clientID,
+          type,
+          pending: true,
+          id: clientID,
+        });
+        changeLastMessage(state, toUser, content, 0, type);
+      } catch (e) {
+        console.error(e);
+      }
     },
     [sendMessage.fulfilled]: (state, action) => {
       // 暂时只考虑选中的情况
       console.log(action);
-      const { clientID, id, createdAt } = action.payload;
+      const { clientID, id, createdAt, toUser } = action.payload;
       const historyIndex = state.history.findIndex(
         (message) => message.clientID === clientID
       );
       if (historyIndex === -1) return;
       state.history[historyIndex].pending = false;
       state.history[historyIndex].id = id;
+      changeLastMessageID(state, toUser, id);
       state.history[historyIndex].createdAt = createdAt;
-      // const { input: content, clientID } = action.meta.arg;
     },
     [sendMessage.rejected]: (state, action) => {
       // 暂时只考虑选中的情况
@@ -374,13 +448,28 @@ export const chatSlice = createSlice({
     },
     [newFriend.fulfilled]: (state, action) => {
       const { account, avatar, nickname, online } = action.payload.data;
-      state.friends.push({
-        account,
-        avatar,
-        last_message: { content: '我通过了你的好友请求', type: 'reply' },
-        nickname,
-        online,
-      });
+      const idx = state.friends.findIndex(
+        (friend) => friend.account === account
+      );
+      if (idx !== -1) {
+        state.friends[idx].last_message = {
+          content: '我通过了你的好友请求',
+          type: 'reply',
+          id: action.meta.arg.id,
+        };
+      } else {
+        state.friends.push({
+          account,
+          avatar,
+          last_message: {
+            content: '我通过了你的好友请求',
+            type: 'reply',
+            id: action.meta.arg.id,
+          },
+          nickname,
+          online,
+        });
+      }
     },
     [newFriend.rejected]: (state) => {
       showSnack(state, '有一个新的好友请求通过，但获取详情失败', 'error');
@@ -449,19 +538,31 @@ export const {
   logout,
   reconnectAttempt,
   reconnect,
+  saveKey,
 } = chatSlice.actions;
 
 const recvMessageCenter = createAsyncThunk(
   'recvMessageCenter',
   (data, thunkAPI) => {
     console.log('center', data);
-    const { type } = data;
+    const { type, fromUser, content } = data;
     if (type === 'request') {
       // 好友请求
       thunkAPI.dispatch(incomingRequest(data));
     } else if (type.includes('reply')) {
       // 好友通过
       thunkAPI.dispatch(newFriend(data));
+    } else if (type === 'key') {
+      console.log(fromBase64(content));
+      thunkAPI.dispatch(incomingMessage(data));
+      thunkAPI.dispatch(saveKey({ user: fromUser, key: fromBase64(content) }));
+    } else if (type === 'secured') {
+      thunkAPI.dispatch(
+        incomingMessage({
+          ...data,
+          content: decrypt(content, getMyKey().privateKey),
+        })
+      );
     } else {
       // 消息
       thunkAPI.dispatch(incomingMessage(data));
@@ -492,4 +593,5 @@ export {
   getNewMessage,
   ping,
   deleteFriend,
+  getMoreHistory,
 };

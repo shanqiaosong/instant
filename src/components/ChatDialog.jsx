@@ -1,6 +1,10 @@
 import React from 'react';
-import TextField from '@material-ui/core/TextField';
-import IconButton from '@material-ui/core/IconButton';
+import {
+  ClickAwayListener,
+  IconButton,
+  TextField,
+  Tooltip,
+} from '@material-ui/core';
 import {
   Check,
   EmojiPeople,
@@ -8,16 +12,23 @@ import {
   Help,
   HowToReg,
   InsertEmoticon,
+  Lock,
   MoreHoriz,
   Send,
+  VpnKey,
 } from '@material-ui/icons';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import CircularProgress from '@material-ui/core/CircularProgress';
-import { Tooltip } from '@material-ui/core';
+
 import { Picker } from 'emoji-mart';
 import style from './Dialog.sass';
-import { clearDot, displayHistory, sendMessage } from '../redux/chatSlice';
+import {
+  clearDot,
+  displayHistory,
+  getMoreHistory,
+  sendMessage,
+} from '../redux/chatSlice';
 
 class ChatDialog extends React.Component {
   constructor(props) {
@@ -27,6 +38,8 @@ class ChatDialog extends React.Component {
       error: '',
       showEmoji: false,
     };
+    this.inputRef = React.createRef();
+    this.scroll = React.createRef();
   }
 
   componentDidMount() {
@@ -35,11 +48,20 @@ class ChatDialog extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    const { dispatch, friendAccount, history } = this.props;
+    const { dispatch, friendAccount, history, selectedFriend } = this.props;
     console.log(friendAccount);
-    if (friendAccount !== prevProps.friendAccount && friendAccount)
-      dispatch(displayHistory()).then(this.toBottom);
-    if (history.length !== prevProps.history.length) this.toBottom();
+    if (friendAccount !== prevProps.friendAccount && friendAccount) {
+      dispatch(displayHistory({ lastID: selectedFriend.last_message.id })).then(
+        this.toBottom
+      );
+    }
+    if (
+      prevProps.history &&
+      history &&
+      history[history.length - 1]?.id !==
+        prevProps.history[prevProps.history.length - 1]?.id
+    )
+      this.toBottom();
   }
 
   selectEmoji = (emoji) => {
@@ -47,25 +69,62 @@ class ChatDialog extends React.Component {
       input: input + emoji.native,
       showEmoji: false,
     }));
+    this.inputRef.current.focus();
   };
 
   handleSend = () => {
-    const { dispatch } = this.props;
+    const {
+      dispatch,
+      friendAccount,
+      keys: { [friendAccount]: friendKey },
+    } = this.props;
     const { input } = this.state;
     this.setState({
       error: input ? '' : '不能发送空白消息',
     });
     if (!input) return;
     const clientID = String(Date.now()) + String(Math.random());
-    console.log(input, clientID);
-    dispatch(sendMessage({ input, clientID }));
+    const useKey = friendKey;
+    dispatch(
+      sendMessage({
+        input,
+        clientID,
+        type: useKey ? 'secured' : 'text',
+        useKey,
+      })
+    );
     this.setState({ input: '' });
   };
 
   toBottom = () => {
-    const scrollElem = document.querySelector('#scroll');
+    const scrollElem = this.scroll.current;
     if (!scrollElem) return;
     scrollElem.scrollTop = scrollElem.scrollHeight;
+  };
+
+  handleScroll = () => {
+    const scrollElem = this.scroll.current;
+    const { dispatch, history } = this.props;
+    if (Math.abs(scrollElem.scrollTop) === 0) {
+      setTimeout(() => {
+        if (Math.abs(scrollElem.scrollTop) === 0) {
+          const content = scrollElem;
+
+          const curScrollPos = content.scrollTop;
+          const oldScroll = content.scrollHeight - content.clientHeight;
+
+          dispatch(getMoreHistory({ lastID: history[0].id })).then(() => {
+            const newScroll = content.scrollHeight - content.clientHeight;
+            content.scrollTop = curScrollPos + (newScroll - oldScroll);
+            if (curScrollPos + (newScroll - oldScroll) > 0)
+              content.scrollTo({
+                top: curScrollPos + (newScroll - oldScroll) - 90,
+                behavior: 'smooth',
+              });
+          });
+        }
+      }, 300);
+    }
   };
 
   showContent = (diag) => {
@@ -83,6 +142,20 @@ class ChatDialog extends React.Component {
       return (
         <div>
           <EmojiPeople className={style.typeIcon} /> {diag.content}
+        </div>
+      );
+    }
+    if (diag.type === 'key') {
+      return (
+        <div>
+          <VpnKey className={style.typeIcon} /> 这是我的公钥
+        </div>
+      );
+    }
+    if (diag.type === 'secured') {
+      return (
+        <div>
+          <Lock className={style.typeIcon} /> {diag.content}
         </div>
       );
     }
@@ -121,9 +194,17 @@ class ChatDialog extends React.Component {
         onClick={() => dispatch(clearDot())}
         className={style.wrapper}
       >
-        <div id="scroll" className={style.dialogList}>
+        <div
+          ref={this.scroll}
+          onScroll={() => {
+            this.handleScroll();
+          }}
+          id="scroll"
+          className={style.dialogList}
+        >
           <div className={style.dialogInner}>
             {history.map((diag) => {
+              const innerContent = diag && this.showContent(diag);
               return (
                 <div
                   key={diag.id}
@@ -146,9 +227,15 @@ class ChatDialog extends React.Component {
                       </Tooltip>
                     )}
                   </div>
-                  <div className={style.pop}>
-                    {diag && this.showContent(diag)}
-                  </div>
+                  {/^\p{Extended_Pictographic}$/u.test(innerContent) ? (
+                    <div key={diag.id} className={style.emoji}>
+                      {innerContent}
+                    </div>
+                  ) : (
+                    <div key={diag.id} className={style.pop}>
+                      {innerContent}
+                    </div>
+                  )}
                   <div className={style.time}>
                     {this.showTime(diag.createdAt) || (
                       <MoreHoriz className={style.noTime} />
@@ -161,6 +248,8 @@ class ChatDialog extends React.Component {
         </div>
         <div className={style.inputBox}>
           <TextField
+            multiline
+            rowsMax={3}
             error={Boolean(error)}
             placeholder={error || '输入想要发送的内容'}
             variant="outlined"
@@ -171,21 +260,24 @@ class ChatDialog extends React.Component {
               if (ev.key === 'Enter' && !ev.shiftKey) {
                 this.handleSend();
                 ev.preventDefault();
-              } else if (ev.key === 'Enter') {
-                this.setState(({ input: originalInput }) => ({
-                  input: `${originalInput}\n`,
-                }));
               }
             }}
+            inputRef={this.inputRef}
           />
           {showEmoji && (
-            <div className={style.picker}>
-              <Picker
-                showPreview={false}
-                showSkinTones={false}
-                onSelect={this.selectEmoji}
-              />
-            </div>
+            <ClickAwayListener
+              onClickAway={() => this.setState({ showEmoji: false })}
+            >
+              <div className={style.picker}>
+                <Picker
+                  color="#6b19ff"
+                  native
+                  showPreview={false}
+                  showSkinTones={false}
+                  onSelect={this.selectEmoji}
+                />
+              </div>
+            </ClickAwayListener>
           )}
           <IconButton
             onClick={() => {
@@ -215,19 +307,17 @@ ChatDialog.propTypes = {
   history: PropTypes.array.isRequired,
   account: PropTypes.number.isRequired,
   friendAccount: PropTypes.number.isRequired,
+  keys: PropTypes.object.isRequired,
+  selectedFriend: PropTypes.object.isRequired,
 };
 
-function stateMap({
-  chatSlice: {
-    history,
-    account,
-    selectedFriend: { account: friendAccount },
-  },
-}) {
+function stateMap({ chatSlice: { history, account, selectedFriend, keys } }) {
   return {
     history,
     account,
-    friendAccount: friendAccount ?? 0,
+    friendAccount: selectedFriend.account ?? 0,
+    selectedFriend,
+    keys,
   };
 }
 
