@@ -29,9 +29,26 @@
   &:hover
     ::-webkit-scrollbar-thumb
       background: #7280d777
+  .showDropMask,.hideDropMask
+    width: 100%
+    height: 100%
+    border-radius: 16px
+    background-color: white
+    position: absolute
+    z-index: 100
+    left: 0
+    top: 0
+    border: 4px dotted #6b19ff
+    transition: all 0.3s
+  .showDropMask
+    opacity: 0.5
+  .hideDropMask
+    pointer-events: none
+    opacity: 0
+
   .dialogList
-    //display: flex
-    //flex-direction: column-reverse
+    display: flex
+    flex-direction: column-reverse
     height: calc(100% - 75px)
     overflow-y: auto
     overflow-x: hidden
@@ -56,10 +73,10 @@
         font-size: 50px
         margin: -8px -8px -3px
         animation: createBox .25s
-        animation-timing-function: cubic-bezier(0.29, 1.43, 0.65, 1.14)
+        animation-timing-function: cubic-bezier(0.13, 0.92, 0.65, 1.14)
       .pop
         animation: createBox .25s
-        animation-timing-function: cubic-bezier(0.29, 1.43, 0.65, 1.14)
+        animation-timing-function: cubic-bezier(0.13, 0.92, 0.65, 1.14)
         padding: 12px
         border-radius: 10px
         width: max-content
@@ -75,6 +92,15 @@
         .typeIcon
           font-size: 1.7em
           vertical-align: middle
+        .image
+          max-height: 160px
+          margin-bottom: -6px
+          max-width: 100%
+          min-height: 20px
+          object-fit: contain
+        .link
+          color: inherit
+          text-decoration: none
       .time
         width: 100%
         color: #515465

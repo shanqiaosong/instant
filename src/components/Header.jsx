@@ -3,6 +3,7 @@ import { Button, Grid } from '@material-ui/core';
 import { Close, Remove } from '@material-ui/icons';
 import PropTypes from 'prop-types';
 import LinearProgress from '@material-ui/core/LinearProgress';
+import { ipcRenderer } from 'electron';
 import style from './Header.sass';
 
 export default function Header(props) {
@@ -26,10 +27,10 @@ export default function Header(props) {
       />
       <div className={style.title}>{title}</div>
       <Grid className={style.btns} container direction="row" justify="flex-end">
-        <Button size="small">
+        <Button onClick={() => ipcRenderer.sendSync('minimize')} size="small">
           <Remove fontSize="inherit" />
         </Button>
-        <Button size="small">
+        <Button onClick={() => ipcRenderer.sendSync('hide')} size="small">
           <Close fontSize="inherit" />
         </Button>
       </Grid>

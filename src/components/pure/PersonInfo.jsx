@@ -8,14 +8,15 @@ import style from '../Info.sass';
 import friendStyle from '../Friends.sass';
 import network from '../../utils/network';
 import { saveKey } from '../../redux/chatSlice';
+import { genderIcon } from '../../utils/consts';
 
 function PersonInfo(props) {
-  const { nickname, account, avatar, secured, dispatch } = props;
+  const { nickname, account, avatar, secured, dispatch, gender } = props;
   return (
     <div className={style.inner}>
       <Avatar className={friendStyle.avatar} src={network.avatarURL(avatar)} />
       <div className={style.nickname}>
-        {nickname}{' '}
+        {nickname} {genderIcon[gender]}{' '}
         {secured && (
           <Tooltip title="已保存对方的公钥，现在可以安全地向对方发送消息。点击删除对方公钥。">
             <Lock
@@ -33,6 +34,7 @@ function PersonInfo(props) {
 PersonInfo.propTypes = {
   nickname: PropTypes.string,
   account: PropTypes.number,
+  gender: PropTypes.number,
   avatar: PropTypes.string,
   secured: PropTypes.bool,
   dispatch: PropTypes.func.isRequired,
@@ -43,5 +45,6 @@ PersonInfo.defaultProps = {
   avatar: '',
   nickname: '',
   account: 0,
+  gender: 0,
 };
 export default connect()(PersonInfo);

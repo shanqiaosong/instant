@@ -8,26 +8,32 @@ import Tooltip from '@material-ui/core/Tooltip';
 import style from './Info.sass';
 import PersonInfo from './pure/PersonInfo';
 import { deleteFriend } from '../redux/chatSlice';
-import { sendMyKey } from '../utils/security';
+import Message from '../model/Message';
+import { messageStatus, messageTypes } from '../utils/consts';
 
 function Info(props) {
   const { selectedFriend, dispatch, keys } = props;
-  const { avatar, nickname, account } = selectedFriend;
+  const { avatar, nickname, account, gender } = selectedFriend;
   if (!selectedFriend.account) {
     return <div />;
   }
   return (
     <div className={style.wrapper}>
       <PersonInfo
-        secured={keys[account]}
+        secured={!!keys[account]}
         nickname={nickname}
         account={account}
         avatar={avatar}
+        gender={gender}
       />
       <Tooltip title="向对方发送我的公钥，则对方可以安全地向我发送信息。">
         <IconButton
           onClick={() => {
-            sendMyKey();
+            const message = new Message(messageStatus.uncommitted, {
+              toUser: selectedFriend.account,
+              type: messageTypes.key,
+            });
+            message.send();
           }}
           className={style.sendKey}
           aria-label="sendKey"

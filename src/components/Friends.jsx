@@ -6,14 +6,7 @@ import Badge from '@material-ui/core/Badge';
 import { withStyles } from '@material-ui/core/styles';
 import PropTypes from 'prop-types';
 import { ButtonBase } from '@material-ui/core';
-import {
-  EmojiPeople,
-  Help,
-  HowToReg,
-  Lock,
-  PersonAdd,
-  VpnKey,
-} from '@material-ui/icons';
+import { PersonAdd } from '@material-ui/icons';
 import { connect } from 'react-redux';
 import ClickAwayListener from '@material-ui/core/ClickAwayListener';
 import style from './Friends.sass';
@@ -25,6 +18,8 @@ import {
   searchAccount,
   selectFriend,
 } from '../redux/chatSlice';
+import Message from '../model/Message';
+import { messageStatus } from '../utils/consts';
 
 function StyledBadge(props) {
   const OnlineBadge = withStyles((theme) => ({
@@ -67,7 +62,6 @@ function StyledBadge(props) {
         width: '100%',
         height: '100%',
         borderRadius: '50%',
-        animation: '$ripple 1.2s infinite ease-in-out',
         border: '1px solid currentColor',
         content: '""',
       },
@@ -102,54 +96,14 @@ class Friends extends React.Component {
     dispatch(searchAccount(searching));
   };
 
-  showContent = (diag) => {
-    if (diag.type === 'text') {
-      return diag.content;
-    }
-    if (diag.type.includes('reply')) {
-      return (
-        <div>
-          <HowToReg className={style.typeIcon} /> 我通过了你的好友请求
-        </div>
-      );
-    }
-    if (diag.type === 'requested' || diag.type === 'request') {
-      return (
-        <div>
-          <EmojiPeople className={style.typeIcon} /> {diag.content}
-        </div>
-      );
-    }
-    if (diag.type === 'key') {
-      return (
-        <div>
-          <VpnKey className={style.typeIcon} /> 这是我的公钥
-        </div>
-      );
-    }
-    if (diag.type === 'secured') {
-      return (
-        <div>
-          <Lock className={style.typeIcon} /> 加密的消息
-        </div>
-      );
-    }
-    return (
-      <div>
-        <Help className={style.typeIcon} /> 未识别的消息
-      </div>
-    );
-  };
-
   render() {
     const { searching } = this.state;
     const { friends, searchErr, dispatch, selectedFriend } = this.props;
-    console.log(searchErr);
     return (
       <div className={style.wrapper}>
         <ClickAwayListener onClickAway={() => dispatch(clearError())}>
           <TextField
-            label="Search"
+            label="搜索账号"
             variant="outlined"
             className={style.search}
             InputProps={{
@@ -182,7 +136,8 @@ class Friends extends React.Component {
                 online,
                 avatar,
                 messageCnt,
-                last_message: { type, content },
+                // eslint-disable-next-line @typescript-eslint/naming-convention
+                last_message,
                 isRequest,
               } = friend;
               return (
@@ -194,6 +149,12 @@ class Friends extends React.Component {
                       dispatch(selectFriend(friend));
                     }
                     dispatch(clearDot());
+                  }}
+                  onDragEnter={() => {
+                    if (!isRequest) {
+                      dispatch(selectFriend(friend));
+                      dispatch(clearDot());
+                    }
                   }}
                   key={account}
                   className={[
@@ -217,7 +178,10 @@ class Friends extends React.Component {
                   </StyledBadge>
                   <div className={style.nickname}>{nickname}</div>
                   <div className={style.content}>
-                    {this.showContent({ type, content })}
+                    {new Message(
+                      messageStatus.stored,
+                      last_message
+                    ).getPreview()}
                   </div>
 
                   <Badge

@@ -7,28 +7,21 @@ import {
 } from '@material-ui/core';
 import {
   Check,
-  EmojiPeople,
   ErrorOutline,
-  Help,
-  HowToReg,
   InsertEmoticon,
-  Lock,
   MoreHoriz,
   Send,
-  VpnKey,
 } from '@material-ui/icons';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import CircularProgress from '@material-ui/core/CircularProgress';
+import { clipboard, ipcRenderer } from 'electron';
 
 import { Picker } from 'emoji-mart';
 import style from './Dialog.sass';
-import {
-  clearDot,
-  displayHistory,
-  getMoreHistory,
-  sendMessage,
-} from '../redux/chatSlice';
+import { clearDot, displayHistory, getMoreHistory } from '../redux/chatSlice';
+import Message from '../model/Message';
+import { messageStatus, messageTypes } from '../utils/consts';
 
 class ChatDialog extends React.Component {
   constructor(props) {
@@ -37,9 +30,11 @@ class ChatDialog extends React.Component {
       input: '',
       error: '',
       showEmoji: false,
+      showDropMask: false,
     };
     this.inputRef = React.createRef();
     this.scroll = React.createRef();
+    this.innerContent = React.createRef();
   }
 
   componentDidMount() {
@@ -51,15 +46,19 @@ class ChatDialog extends React.Component {
     const { dispatch, friendAccount, history, selectedFriend } = this.props;
     console.log(friendAccount);
     if (friendAccount !== prevProps.friendAccount && friendAccount) {
-      dispatch(displayHistory({ lastID: selectedFriend.last_message.id })).then(
-        this.toBottom
+      dispatch(
+        displayHistory({
+          lastID: selectedFriend.last_message.id,
+          user: friendAccount,
+        })
       );
-    }
-    if (
+    } else if (
       prevProps.history &&
       history &&
-      history[history.length - 1]?.id !==
-        prevProps.history[prevProps.history.length - 1]?.id
+      (history[history.length - 1]?.id ||
+        history[history.length - 1]?.clientID) !==
+        (prevProps.history[prevProps.history.length - 1]?.id ||
+          prevProps.history[prevProps.history.length - 1]?.clientID)
     )
       this.toBottom();
   }
@@ -74,96 +73,67 @@ class ChatDialog extends React.Component {
 
   handleSend = () => {
     const {
-      dispatch,
       friendAccount,
       keys: { [friendAccount]: friendKey },
     } = this.props;
     const { input } = this.state;
-    this.setState({
-      error: input ? '' : '不能发送空白消息',
-    });
-    if (!input) return;
-    const clientID = String(Date.now()) + String(Math.random());
-    const useKey = friendKey;
-    dispatch(
-      sendMessage({
-        input,
-        clientID,
-        type: useKey ? 'secured' : 'text',
-        useKey,
-      })
-    );
-    this.setState({ input: '' });
+    try {
+      const message = new Message(messageStatus.uncommitted, {
+        content: input,
+        toUser: friendAccount,
+        type: friendKey ? messageTypes.secured : messageTypes.text,
+      });
+      message.send();
+      this.setState({
+        input: '',
+      });
+    } catch ({ message }) {
+      this.setState({
+        error: message,
+        input: '',
+      });
+    }
   };
 
   toBottom = () => {
     const scrollElem = this.scroll.current;
     if (!scrollElem) return;
-    scrollElem.scrollTop = scrollElem.scrollHeight;
+    setTimeout(() => {
+      scrollElem.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
   };
 
   handleScroll = () => {
     const scrollElem = this.scroll.current;
-    const { dispatch, history } = this.props;
-    if (Math.abs(scrollElem.scrollTop) === 0) {
+    const contentElem = this.innerContent.current;
+    const { dispatch, history, friendAccount } = this.props;
+    if (!history.length) return;
+    console.log(
+      contentElem.clientHeight,
+      scrollElem.clientHeight,
+      contentElem.scrollTop,
+      scrollElem.scrollTop
+    );
+    const checkRefresh = () =>
+      Math.abs(
+        contentElem.clientHeight -
+          scrollElem.clientHeight +
+          scrollElem.scrollTop
+      ) < 10;
+    if (checkRefresh()) {
       setTimeout(() => {
-        if (Math.abs(scrollElem.scrollTop) === 0) {
-          const content = scrollElem;
-
-          const curScrollPos = content.scrollTop;
-          const oldScroll = content.scrollHeight - content.clientHeight;
-
-          dispatch(getMoreHistory({ lastID: history[0].id })).then(() => {
-            const newScroll = content.scrollHeight - content.clientHeight;
-            content.scrollTop = curScrollPos + (newScroll - oldScroll);
-            if (curScrollPos + (newScroll - oldScroll) > 0)
-              content.scrollTo({
-                top: curScrollPos + (newScroll - oldScroll) - 90,
-                behavior: 'smooth',
-              });
+        if (checkRefresh()) {
+          dispatch(
+            getMoreHistory({ user: friendAccount, lastID: history[0].id })
+          ).then(() => {
+            scrollElem.scrollTo({
+              top: scrollElem.scrollTop - 90,
+              behavior: 'smooth',
+            });
           });
         }
       }, 300);
     }
-  };
-
-  showContent = (diag) => {
-    if (diag.type === 'text') {
-      return diag.content;
-    }
-    if (diag.type.includes('reply')) {
-      return (
-        <div>
-          <HowToReg className={style.typeIcon} /> 我通过了你的好友请求
-        </div>
-      );
-    }
-    if (diag.type === 'requested' || diag.type === 'request') {
-      return (
-        <div>
-          <EmojiPeople className={style.typeIcon} /> {diag.content}
-        </div>
-      );
-    }
-    if (diag.type === 'key') {
-      return (
-        <div>
-          <VpnKey className={style.typeIcon} /> 这是我的公钥
-        </div>
-      );
-    }
-    if (diag.type === 'secured') {
-      return (
-        <div>
-          <Lock className={style.typeIcon} /> {diag.content}
-        </div>
-      );
-    }
-    return (
-      <div>
-        <Help className={style.typeIcon} /> 未识别的消息
-      </div>
-    );
   };
 
   showTime = (time) => {
@@ -181,9 +151,77 @@ class ChatDialog extends React.Component {
     return `${getFullDate(diagTime)} ${getFullTime(diagTime)}`;
   };
 
+  handleDrop = (ev) => {
+    ev.preventDefault();
+    if (!ev.dataTransfer.items) return;
+    let sent = false;
+    for (let j = 0; j < ev.dataTransfer.items.length; j += 1) {
+      // 先检查一遍是否存在自定义文件，如果有则之后不再检查其他内容
+      if (ev.dataTransfer.items[j].type === 'custom/file') {
+        sent = true;
+        ev.dataTransfer.items[j].getAsString((string) => {
+          if (window.customFile && window.customFile.name === string) {
+            this.sendFile(window.customFile);
+            // 如果发送了文件，则不再添加其他文字
+          }
+        });
+        return;
+      }
+    }
+    if (sent) return;
+    for (let i = 0; i < ev.dataTransfer.items.length; i += 1) {
+      console.log(ev.dataTransfer.items[i]);
+      if (ev.dataTransfer.items[i].kind === 'file') {
+        // 从系统拖动发送文件
+        const f = ev.dataTransfer.items[i].getAsFile();
+        if (!f.type && f.size % 4096 === 0) {
+          this.setState({
+            error: '只能发送文件',
+            input: '',
+          });
+          return;
+        }
+        this.sendFile(f);
+      } else if (ev.dataTransfer.items[i].type === 'text/plain') {
+        // 文字
+        ev.dataTransfer.items[i].getAsString((string) => {
+          this.setState((state) => ({
+            input: state.input + string,
+          }));
+        });
+      } else {
+        // 其他，打印出来debug用
+        console.log(ev.dataTransfer.items[i]);
+        ev.dataTransfer.items[i].getAsString((string) => {
+          console.log(string);
+        });
+      }
+    }
+  };
+
+  async sendFile(file) {
+    const { friendAccount } = this.props;
+    try {
+      const message = new Message(messageStatus.uncommitted, {
+        content: file,
+        toUser: friendAccount,
+        type: file.name.match(/.(jpg|jpeg|png|gif)$/i)
+          ? messageTypes.image
+          : messageTypes.file,
+      });
+      message.send();
+    } catch ({ message }) {
+      this.setState({
+        error: message,
+        input: '',
+      });
+      console.error(message);
+    }
+  }
+
   render() {
     const { history, account, dispatch, friendAccount } = this.props;
-    const { input, error, showEmoji } = this.state;
+    const { input, error, showEmoji, showDropMask } = this.state;
     if (!friendAccount) {
       return <div />;
     }
@@ -193,7 +231,37 @@ class ChatDialog extends React.Component {
         onKeyDown={() => dispatch(clearDot())}
         onClick={() => dispatch(clearDot())}
         className={style.wrapper}
+        onDragEnter={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          console.log('enter');
+          this.setState({ showDropMask: true });
+        }}
+        onDragOver={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
       >
+        <div
+          onDragOver={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+          onDragLeave={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            console.log('leave');
+            this.setState({ showDropMask: false });
+          }}
+          onDrop={(e) => {
+            this.handleDrop(e);
+            e.stopPropagation();
+            e.preventDefault();
+            console.log('drop');
+            this.setState({ showDropMask: false });
+          }}
+          className={showDropMask ? style.showDropMask : style.hideDropMask}
+        />
         <div
           ref={this.scroll}
           onScroll={() => {
@@ -202,12 +270,13 @@ class ChatDialog extends React.Component {
           id="scroll"
           className={style.dialogList}
         >
-          <div className={style.dialogInner}>
+          <div ref={this.innerContent} className={style.dialogInner}>
             {history.map((diag) => {
-              const innerContent = diag && this.showContent(diag);
+              const innerContent =
+                diag && new Message(messageStatus.stored, diag).getDialogView();
               return (
                 <div
-                  key={diag.id}
+                  key={diag.id || diag.clientID}
                   className={[
                     style.diagBox,
                     style[diag.fromUser === account ? 'to' : 'from'],
@@ -262,6 +331,31 @@ class ChatDialog extends React.Component {
                 ev.preventDefault();
               }
             }}
+            onPaste={() => {
+              if (clipboard.readText()) return;
+              const image = clipboard.readImage().toPNG();
+              const imageFile = new File([image], `${Date.now()}.png`, {
+                type: 'image/png',
+              });
+              if (imageFile.size > 0) {
+                this.sendFile(imageFile);
+                return;
+              }
+              const fileName =
+                clipboard
+                  .readBuffer('FileNameW')
+                  .toString('ucs2')
+                  .replace(RegExp(String.fromCharCode(0), 'g'), '') ||
+                clipboard.read('public.file-url');
+              const fileContent = ipcRenderer.sendSync('readFile', fileName);
+              const file = new File(
+                [fileContent],
+                fileName.slice(fileName.lastIndexOf('\\') + 1)
+              );
+              if (file.size > 0) {
+                this.sendFile(file);
+              }
+            }}
             inputRef={this.inputRef}
           />
           {showEmoji && (
@@ -285,15 +379,10 @@ class ChatDialog extends React.Component {
                 showEmoji: true,
               });
             }}
-            className={style.emojiBtn}
           >
             <InsertEmoticon />
           </IconButton>
-          <IconButton
-            onClick={this.handleSend}
-            className={style.sendBtn}
-            color="primary"
-          >
+          <IconButton onClick={this.handleSend} color="primary">
             <Send />
           </IconButton>
         </div>

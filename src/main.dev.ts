@@ -11,11 +11,12 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, Menu, Tray } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import Store from 'electron-store';
 import crypto from 'crypto';
+import fs from 'fs';
 import MenuBuilder from './menu';
 
 Store.initRenderer();
@@ -29,6 +30,9 @@ export default class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
+let appTray = null;
+let blink;
+let unBlink;
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -75,6 +79,8 @@ const createWindow = async () => {
     show: false,
     width: 335,
     height: 440,
+    minHeight: 440,
+    minWidth: 335,
     frame: false,
     transparent: true,
     icon: getAssetPath('icon.png'),
@@ -83,9 +89,65 @@ const createWindow = async () => {
       enableRemoteModule: true,
     },
   });
+  mainWindow.setMaximizable(false);
+
+  // 系统托盘图标闪烁
+  let count = 0;
+  let timer = null;
+
+  blink = () => {
+    mainWindow?.flashFrame(true);
+    clearInterval(timer);
+    timer = setInterval(() => {
+      count += 1;
+      if (count % 2 === 0) {
+        appTray.setImage(getAssetPath('icon32.ico'));
+      } else {
+        appTray.setImage(getAssetPath('icona.ico'));
+      }
+    }, 500);
+  };
+
+  unBlink = () => {
+    clearInterval(timer);
+    appTray.setImage(getAssetPath('icon32.ico'));
+    mainWindow?.flashFrame(false);
+  };
+
+  // 系统托盘右键菜单
+  const trayMenuTemplate = [
+    {
+      label: '打开',
+      click() {
+        unBlink();
+        mainWindow?.show();
+        mainWindow?.focus();
+      },
+    },
+    {
+      label: '退出',
+      click() {
+        app.quit();
+      },
+    },
+  ];
+  appTray = new Tray(getAssetPath('icon32.ico'));
+  // 图标的上下文菜单
+  const contextMenu = Menu.buildFromTemplate(trayMenuTemplate);
+  // 设置此托盘图标的悬停提示内容
+  appTray.setToolTip('与您的朋友保持连接');
+  // 设置此图标的上下文菜单
+  appTray.setContextMenu(contextMenu);
+
+  // 单点击 1.主窗口显示隐藏切换 2.清除闪烁
+  appTray.on('click', () => {
+    unBlink();
+    mainWindow?.show();
+    mainWindow?.focus();
+  });
 
   // mainWindow.loadURL(`file://${__dirname}/index.html`);
-  mainWindow.loadURL(`file://${__dirname}/index.html#/login`);
+  mainWindow?.loadURL(`file://${__dirname}/index.html#/login`);
 
   // @TODO: Use 'ready-to-show' event
   //        https://github.com/electron/electron/blob/master/docs/api/browser-window.md#using-ready-to-show-event
@@ -138,6 +200,9 @@ app.on('activate', () => {
   // dock icon is clicked and there are no other windows open.
   if (mainWindow === null) createWindow();
 });
+app.on('browser-window-focus', () => {
+  unBlink();
+});
 
 ipcMain.on('generateKey', (event) => {
   const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
@@ -148,4 +213,50 @@ ipcMain.on('generateKey', (event) => {
     publicKey: publicKey.export({ format: 'pem', type: 'spki' }),
     privateKey: privateKey.export({ format: 'pem', type: 'pkcs1' }),
   };
+});
+
+ipcMain.on('isFocused', (event) => {
+  event.returnValue = mainWindow?.isFocused();
+});
+ipcMain.on('focus', (event) => {
+  event.returnValue = true;
+  mainWindow?.focus();
+  unBlink();
+});
+ipcMain.on('flash', (event) => {
+  event.returnValue = true;
+  blink();
+});
+
+ipcMain.on('hide', (event) => {
+  event.returnValue = true;
+  mainWindow?.hide();
+});
+
+ipcMain.on('close', (event) => {
+  event.returnValue = true;
+  mainWindow?.close();
+});
+
+ipcMain.on('minimize', (event) => {
+  event.returnValue = true;
+  mainWindow?.minimize();
+});
+
+ipcMain.on('toMain', (event) => {
+  event.returnValue = true;
+  mainWindow?.setMinimumSize(1036, 573);
+});
+
+ipcMain.on('toSmall', (event) => {
+  event.returnValue = true;
+  mainWindow?.setMinimumSize(335, 440);
+});
+
+ipcMain.on('readFile', (event, addr) => {
+  try {
+    event.returnValue = fs.readFileSync(addr);
+  } catch (e) {
+    event.returnValue = false;
+  }
 });

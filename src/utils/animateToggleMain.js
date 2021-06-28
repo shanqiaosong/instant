@@ -1,4 +1,7 @@
+import { ipcRenderer } from 'electron';
+
 function toggleToMain() {
+  ipcRenderer.sendSync('toMain');
   document.querySelector('.main-window').classList.add('mainStatus');
   document.querySelector('#root').classList.add('mainStatus');
   setTimeout(
@@ -12,6 +15,7 @@ function toggleToMain() {
 }
 
 function toggleFromMain() {
+  ipcRenderer.sendSync('toSmall');
   document.querySelector('.main-window').classList.remove('noAnimate');
   document.querySelector('.main-window').classList.remove('mainStatus');
   document.querySelector('#root').classList.remove('mainStatus');

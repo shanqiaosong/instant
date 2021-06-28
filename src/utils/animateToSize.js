@@ -21,7 +21,6 @@ export default function animateToSize(width, height) {
         y: Math.round(bound.y - (bound.height - originalHeight) / 2),
       };
       if (JSON.stringify(newBound) !== JSON.stringify(lastBound)) {
-        console.log(newBound);
         remote.getCurrentWindow().setBounds(newBound);
         lastBound = JSON.parse(JSON.stringify(newBound));
       }

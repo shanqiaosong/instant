@@ -9,6 +9,10 @@ const state = configureStore({
     loginSlice: loginReducer,
     chatSlice: chatReducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: false,
+    }),
 });
 
 window.store = state;

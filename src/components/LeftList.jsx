@@ -1,20 +1,21 @@
 import React from 'react';
 import Avatar from '@material-ui/core/Avatar';
-import { Link } from 'react-router-dom';
+import { Link, withRouter } from 'react-router-dom';
 import ExitToAppOutlinedIcon from '@material-ui/icons/ExitToAppOutlined';
 import ModeCommentOutlinedIcon from '@material-ui/icons/ModeCommentOutlined';
-import SettingsApplicationsOutlinedIcon from '@material-ui/icons/SettingsApplicationsOutlined';
 import {
   ButtonBase,
   Dialog,
-  DialogTitle,
   DialogContent,
+  DialogTitle,
 } from '@material-ui/core';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
+import { InfoOutlined, SystemUpdateAlt } from '@material-ui/icons';
 import style from './LeftList.sass';
 import network from '../utils/network';
 import { logout } from '../redux/chatSlice';
+import { genderIcon } from '../utils/consts';
 
 class LeftList extends React.Component {
   constructor(props) {
@@ -22,11 +23,27 @@ class LeftList extends React.Component {
     this.state = { showAbout: false };
   }
 
+  componentDidMount() {
+    const { account, history } = this.props;
+    if (account === 0) {
+      console.log(history);
+      history.push('/login');
+    }
+  }
+
   render() {
-    const { nickname, avatar, dispatch, account } = this.props;
+    const {
+      nickname,
+      avatar,
+      dispatch,
+      account,
+      gender,
+      checkUpdate,
+    } = this.props;
     const { showAbout } = this.state;
     return (
       <div className={style.wrapper}>
+        {/* 关于我们对话框 */}
         <Dialog
           onClose={() => this.setState({ showAbout: false })}
           open={showAbout}
@@ -60,7 +77,9 @@ class LeftList extends React.Component {
           </DialogContent>
         </Dialog>
         <Avatar src={network.avatarURL(avatar)} className={style.avatar} />
-        <div className={style.nickname}>{nickname}</div>
+        <div className={style.nickname}>
+          {nickname} {genderIcon[gender]}
+        </div>
         <div className={style.account}>{account}</div>
         <div className={style.tabs}>
           <ButtonBase className={[style.tab, style.chosen].join(' ')}>
@@ -88,7 +107,10 @@ class LeftList extends React.Component {
             }}
             className={style.tab}
           >
-            <SettingsApplicationsOutlinedIcon /> 关于
+            <InfoOutlined /> 关于
+          </ButtonBase>
+          <ButtonBase onClick={() => checkUpdate()} className={style.tab}>
+            <SystemUpdateAlt /> 更新
           </ButtonBase>
         </div>
       </div>
@@ -99,16 +121,20 @@ class LeftList extends React.Component {
 LeftList.propTypes = {
   nickname: PropTypes.string.isRequired,
   account: PropTypes.number.isRequired,
+  gender: PropTypes.number.isRequired,
   avatar: PropTypes.string.isRequired,
   dispatch: PropTypes.func.isRequired,
+  checkUpdate: PropTypes.func.isRequired,
+  history: PropTypes.object.isRequired,
 };
 
-function stateMap({ chatSlice: { nickname, account, avatar } }) {
+function stateMap({ chatSlice: { nickname, account, avatar, gender } }) {
   return {
     nickname,
     account,
     avatar: avatar || '',
+    gender,
   };
 }
 
-export default connect(stateMap)(LeftList);
+export default withRouter(connect(stateMap)(LeftList));
