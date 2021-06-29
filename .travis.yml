@@ -1,0 +1,35 @@
+matrix :
+  include :
+    - os: osx
+      osx_image : xcode10.2
+      language : node_js
+      node_js : "11.6.0"
+      env :
+        - ELECTRON_CACHE=$HOME/.cache/electron
+        - ELECTRON_BUILDER_CACHE=$HOME/.cache/electron-builder
+
+    - os: linux
+      dist : trusty
+      sudo : required
+      services : docker
+      language : generic
+
+
+language: node_js
+node_js: '12.18.3'
+
+
+# cache some files for faster builds
+cache :
+  yarn : true
+  directories :
+    - node_modules
+    - $HOME/.cache/electron
+    - $HOME/.cache/electron-builder
+
+script:
+  - yarn package_new
+
+branches:
+  only:
+    - main
