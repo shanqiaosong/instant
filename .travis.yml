@@ -1,35 +1,33 @@
-matrix :
-  include :
-    - os: osx
-      osx_image : xcode10.2
-      language : node_js
-      node_js : '12.18.3'
-      env :
-        - ELECTRON_CACHE=$HOME/.cache/electron
-        - ELECTRON_BUILDER_CACHE=$HOME/.cache/electron-builder
-
-    - os: linux
-      dist : trusty
-      sudo : required
-      services : docker
-      language : generic
-
-
+matrix:
+  include:
+  - os: osx
+    osx_image: xcode10.2
+    language: node_js
+    node_js: 12.18.3
+    env:
+    - ELECTRON_CACHE=$HOME/.cache/electron
+    - ELECTRON_BUILDER_CACHE=$HOME/.cache/electron-builder
+  - os: linux
+    dist: trusty
+    sudo: required
+    services: docker
+    language: generic
 language: node_js
-node_js: '12.18.3'
-
-
-# cache some files for faster builds
-cache :
-  yarn : true
-  directories :
-    - node_modules
-    - $HOME/.cache/electron
-    - $HOME/.cache/electron-builder
-
+node_js: 12.18.3
+cache:
+  yarn: true
+  directories:
+  - node_modules
+  - "$HOME/.cache/electron"
+  - "$HOME/.cache/electron-builder"
 script:
-  - yarn package_new
-
-branches:
-  only:
-    - main
+- yarn package_new
+deploy:
+  provider: releases
+  user: "shanzh@pku.edu.cn"
+  skip_cleanup: true
+  on:
+    tags: true
+  file: "release/*"
+  password:
+    secure: KXotlRPUlM9cKt1MoiExW8P6iRO5wDP/kh7oeoocCUizuobStCnloDZjvOTc2UifESBcKmBufR8p0fe8Ch2/pG8RMVHASvhN9trYlHSKr0GKAhWJe/UohLbgUiof3yJe9UiwS5l8u7CA/BtNnTgvuVZNRgMWCI3Ix4yFXqkJxk5L9OJWVojSv+O0O9YrtwUjAfnNJeA6Omv6JD+zob5dDrduY6cexpY4o5gieeZBCLWoTivUYxgOGmY9wOfUNZ71eFPErNGR3aUT35LxwEHmFaJj7k6t0sKWnqFxscDfG1q7MmcB5Lcvmy2eFrrNfu7PBtjBvi8Unf6vkorrLaiow4iKp/ILQScByOUUw19VSTxpO35G5B+zAPJ43b3Pks38/eTZcVNO0q9sITWpnAfT1WjzbAJs8JdUXCrc0UzPtNbXCqx/6im18fENP3sN6AhEvf2gnhaCI2kwl/JMKF1QaVdIA1mMs8BxOZHCHSkDh14uFz8wYQQ7HocJQt7OP0SwIXbLsAgJgA4u3nUy+/mS4L0lA8o00KStwCgmI3QXlZdtO++oozoRkAe9IiTeg7RcfEfGcDNRSTFcqtRlAR7EM6McfukepP0dbEoZBXGuFtPx8rO7Ly5938SIFH2QlqKqVKK5Qjln9chXtGnFEJ8KX3wdR9/wwB5uGJ3BIm1LydI=

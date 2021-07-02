@@ -2,6 +2,7 @@ import anime from 'animejs';
 import { remote } from 'electron';
 
 export default function animateToSize(width, height) {
+  if (!remote) return;
   const bound = remote.getCurrentWindow().getBounds();
   const originalWidth = bound.width;
   const originalHeight = bound.height;
