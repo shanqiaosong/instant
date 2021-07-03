@@ -7,11 +7,6 @@ matrix:
     env:
     - ELECTRON_CACHE=$HOME/.cache/electron
     - ELECTRON_BUILDER_CACHE=$HOME/.cache/electron-builder
-  - os: linux
-    dist: trusty
-    sudo: required
-    services: docker
-    language: generic
 language: node_js
 node_js: 12.18.3
 cache:
