@@ -24,10 +24,14 @@ script:
 - yarn package_new
 deploy:
   provider: releases
-  user: "shanzh@pku.edu.cn"
   skip_cleanup: true
   on:
     tags: true
   file: "release/*"
-  password:
-    secure: KXotlRPUlM9cKt1MoiExW8P6iRO5wDP/kh7oeoocCUizuobStCnloDZjvOTc2UifESBcKmBufR8p0fe8Ch2/pG8RMVHASvhN9trYlHSKr0GKAhWJe/UohLbgUiof3yJe9UiwS5l8u7CA/BtNnTgvuVZNRgMWCI3Ix4yFXqkJxk5L9OJWVojSv+O0O9YrtwUjAfnNJeA6Omv6JD+zob5dDrduY6cexpY4o5gieeZBCLWoTivUYxgOGmY9wOfUNZ71eFPErNGR3aUT35LxwEHmFaJj7k6t0sKWnqFxscDfG1q7MmcB5Lcvmy2eFrrNfu7PBtjBvi8Unf6vkorrLaiow4iKp/ILQScByOUUw19VSTxpO35G5B+zAPJ43b3Pks38/eTZcVNO0q9sITWpnAfT1WjzbAJs8JdUXCrc0UzPtNbXCqx/6im18fENP3sN6AhEvf2gnhaCI2kwl/JMKF1QaVdIA1mMs8BxOZHCHSkDh14uFz8wYQQ7HocJQt7OP0SwIXbLsAgJgA4u3nUy+/mS4L0lA8o00KStwCgmI3QXlZdtO++oozoRkAe9IiTeg7RcfEfGcDNRSTFcqtRlAR7EM6McfukepP0dbEoZBXGuFtPx8rO7Ly5938SIFH2QlqKqVKK5Qjln9chXtGnFEJ8KX3wdR9/wwB5uGJ3BIm1LydI=
+  api_key:
+    secure: "ayzRAzkf4aXiOtoyul98fDwMf7Hec9SQVrRN22I9CyMnU40LBuhJgSjYXWzfvKwrhHmbu4+er9dTTq7GNh3LvX5CsP1qTJMS/0RH8kkvDAOEA9SFgBF
+            taosQyJwUzPJwSRlDAqsKMH1phCTh0C9p28L5eGMRDRDJHwCdWWs8mFSvpBygM2n6IK6ECxHSJZJw2RFCwK8mtbJ7PQMzrfhsZf2Y0oTqxbDdQRDVAoWoAgH8BrTg6
+            BED5yNArR3FriRXlidTZ4hiyQnkGgkeFAT7sejB31SLolvLA1d7sYCNwhb70kyO6HgYLV2hgdndCDd/T4AQ/Bobh0PKdvB0MFk7BAN4YeLIVDFV6HPkeiSAFVPeePo
+            j7lhknzGdm2BISoA4AtIIx6qRK05BZYpcPSlq8yEgR8dZ1nFKvHZ108y9kmdUUK2el6f4iloXGUtqLUyYw/uEKz2ag0RZN+SWGw+J0AUZIxdJNReTcaPkY5yw5owIH
+            Rzz8mZxvmCzZcy+z5GdB+0rYHaWCLjP5GNw65DiiyOLZQaP/W45N/C5QRL5Rhr/FGYSwexSQUxUSsevxpr8iO9wY61P8g9rmVpLpruPpBAvNrnb8q/TMvDh0F5hYMW
+            9S/jNV72eOgExxGNN/LcI5UPmIa1Hlq4mfLqrauKWwv70ZOGjK9mlQNjADtHkBWE="
