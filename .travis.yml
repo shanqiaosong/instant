@@ -22,5 +22,6 @@ deploy:
   skip_cleanup: true
   on:
     tags: true
+  file_glob: true
   file: release/*
   api_key: ${KEY}
