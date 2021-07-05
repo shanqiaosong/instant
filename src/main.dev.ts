@@ -96,7 +96,9 @@ const createWindow = async () => {
   let timer = null;
 
   blink = () => {
-    mainWindow?.flashFrame(true);
+    if (mainWindow && mainWindow.flashFrame) {
+      mainWindow.flashFrame(true);
+    }
     clearInterval(timer);
     timer = setInterval(() => {
       count += 1;
@@ -111,7 +113,9 @@ const createWindow = async () => {
   unBlink = () => {
     clearInterval(timer);
     appTray.setImage(getAssetPath('icon32.ico'));
-    mainWindow?.flashFrame(false);
+    if (mainWindow && mainWindow.flashFrame) {
+      mainWindow?.flashFrame(false);
+    }
   };
 
   // 系统托盘右键菜单
@@ -135,7 +139,7 @@ const createWindow = async () => {
   // 图标的上下文菜单
   const contextMenu = Menu.buildFromTemplate(trayMenuTemplate);
   // 设置此托盘图标的悬停提示内容
-  appTray.setToolTip('与您的朋友保持连接');
+  appTray.setToolTip('Instant 与您的朋友保持连接');
   // 设置此图标的上下文菜单
   appTray.setContextMenu(contextMenu);
 
@@ -184,14 +188,6 @@ const createWindow = async () => {
 /**
  * Add event listeners...
  */
-
-app.on('window-all-closed', () => {
-  // Respect the OSX convention of having the application in memory even
-  // after all windows have been closed
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
 
 app.whenReady().then(createWindow).catch(console.log);
 
