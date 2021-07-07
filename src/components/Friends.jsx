@@ -129,69 +129,75 @@ class Friends extends React.Component {
                 请在搜索框中键入对方账号来添加好友
               </div>
             )}
-            {friends.map((friend) => {
-              const {
-                account,
-                nickname,
-                online,
-                avatar,
-                messageCnt,
-                // eslint-disable-next-line @typescript-eslint/naming-convention
-                last_message,
-                isRequest,
-              } = friend;
-              return (
-                <ButtonBase
-                  onClick={() => {
-                    if (isRequest) {
-                      dispatch(openAddConfirm(friend));
-                    } else {
-                      dispatch(selectFriend(friend));
-                    }
-                    dispatch(clearDot());
-                  }}
-                  onDragEnter={() => {
-                    if (!isRequest) {
-                      dispatch(selectFriend(friend));
+            {[...friends]
+              .sort((a, b) => {
+                return b.last_message.id - a.last_message.id;
+              })
+              .map((friend) => {
+                const {
+                  account,
+                  nickname,
+                  online,
+                  avatar,
+                  messageCnt,
+                  // eslint-disable-next-line @typescript-eslint/naming-convention
+                  last_message,
+                  isRequest,
+                } = friend;
+                return (
+                  <ButtonBase
+                    onClick={() => {
+                      if (isRequest) {
+                        dispatch(openAddConfirm(friend));
+                      } else {
+                        dispatch(selectFriend(friend));
+                      }
                       dispatch(clearDot());
-                    }
-                  }}
-                  key={account}
-                  className={[
-                    style.friend,
-                    selectedFriend.account === account ? style.selected : null,
-                  ].join(' ')}
-                >
-                  <StyledBadge
-                    overlap="circle"
-                    anchorOrigin={{
-                      vertical: 'bottom',
-                      horizontal: 'right',
                     }}
-                    variant="dot"
-                    online={online}
+                    onDragEnter={() => {
+                      if (!isRequest) {
+                        dispatch(selectFriend(friend));
+                        dispatch(clearDot());
+                      }
+                    }}
+                    key={account}
+                    className={[
+                      style.friend,
+                      selectedFriend.account === account
+                        ? style.selected
+                        : null,
+                    ].join(' ')}
                   >
-                    <Avatar
-                      className={style.avatar}
-                      src={network.avatarURL(avatar)}
-                    />
-                  </StyledBadge>
-                  <div className={style.nickname}>{nickname}</div>
-                  <div className={style.content}>
-                    {new Message(
-                      messageStatus.stored,
-                      last_message
-                    ).getPreview()}
-                  </div>
+                    <StyledBadge
+                      overlap="circle"
+                      anchorOrigin={{
+                        vertical: 'bottom',
+                        horizontal: 'right',
+                      }}
+                      variant="dot"
+                      online={online}
+                    >
+                      <Avatar
+                        className={style.avatar}
+                        src={network.avatarURL(avatar)}
+                      />
+                    </StyledBadge>
+                    <div className={style.nickname}>{nickname}</div>
+                    <div className={style.content}>
+                      {new Message(
+                        messageStatus.stored,
+                        last_message
+                      ).getPreview()}
+                    </div>
 
-                  <Badge
-                    color="error"
-                    className={style.messageCnt}
-                    badgeContent={messageCnt}
-                  />
-                </ButtonBase>
-              );
-            })}
+                    <Badge
+                      color="error"
+                      className={style.messageCnt}
+                      badgeContent={messageCnt}
+                    />
+                  </ButtonBase>
+                );
+              })}
           </div>
         </div>
       </div>

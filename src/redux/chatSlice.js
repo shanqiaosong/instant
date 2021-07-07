@@ -174,6 +174,12 @@ export const chatSlice = createSlice({
     },
     closeAddConfirm(state) {
       state.showAddConfirm = false;
+      state.friends.splice(
+        state.friends.findIndex(
+          (friend) => friend.account === state.adderInfo.account
+        ),
+        1
+      );
       state.adderInfo = {};
     },
     selectFriend(state, action) {
